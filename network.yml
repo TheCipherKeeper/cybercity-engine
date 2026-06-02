@@ -1,0 +1,509 @@
+version: 1
+segments:
+  - public
+  - corp
+  - ot
+  - mgmt
+channels: []
+organizations:
+  - id: city-hall
+    name: City Hall
+    segment: corp
+    services:
+      - id: cityhall-portal
+        name: City Services Portal
+        kind: web
+        exposure: public
+      - id: cityhall-ad
+        name: Active Directory
+        kind: identity
+        exposure: intranet
+      - id: civic-db
+        name: Residents Registry
+        kind: db
+        exposure: intranet
+      - id: civic-file-share
+        name: Internal File Share
+        kind: file-share
+        exposure: intranet
+      - id: cityhall-mail
+        name: Internal Mail
+        kind: mail
+        exposure: intranet
+      - id: cityhall-dns
+        name: Internal DNS
+        kind: dns
+        exposure: mgmt
+      - id: cityhall-backup
+        name: Backup Service
+        kind: backup
+        exposure: mgmt
+  - id: election-commission
+    name: Election Commission
+    segment: corp
+    services:
+      - id: election-dashboard
+        name: Public Results Dashboard
+        kind: web
+        exposure: public
+      - id: election-tally
+        name: Vote Tally Service
+        kind: api
+        exposure: intranet
+      - id: election-results-db
+        name: Results Database
+        kind: db
+        exposure: intranet
+      - id: election-audit-log
+        name: Audit Log
+        kind: log
+        exposure: mgmt
+  - id: city-courts
+    name: City Courts
+    segment: corp
+    services:
+      - id: courts-portal
+        name: Court Records Portal
+        kind: web
+        exposure: public
+      - id: courts-case-mgmt
+        name: Case Management
+        kind: api
+        exposure: intranet
+      - id: courts-db
+        name: Case Database
+        kind: db
+        exposure: intranet
+  - id: civil-registry
+    name: Civil Registry
+    segment: corp
+    services:
+      - id: registry-portal
+        name: Registry Portal
+        kind: web
+        exposure: public
+      - id: registry-db
+        name: Records Database
+        kind: db
+        exposure: intranet
+  - id: tax-authority
+    name: Tax Authority
+    segment: corp
+    services:
+      - id: tax-portal
+        name: Tax Portal
+        kind: web
+        exposure: public
+      - id: tax-filing-api
+        name: Filing API
+        kind: api
+        exposure: intranet
+      - id: tax-db
+        name: Taxpayer Database
+        kind: db
+        exposure: intranet
+  - id: police-dept
+    name: Police Department
+    segment: corp
+    services:
+      - id: police-records
+        name: Records System
+        kind: api
+        exposure: intranet
+      - id: police-cad
+        name: Dispatch (CAD)
+        kind: ot
+        exposure: ot
+      - id: police-db
+        name: Crime Database
+        kind: db
+        exposure: intranet
+  - id: fire-dept
+    name: Fire Department
+    segment: corp
+    services:
+      - id: fire-cad
+        name: Dispatch (CAD)
+        kind: ot
+        exposure: ot
+      - id: fire-db
+        name: Incident Database
+        kind: db
+        exposure: intranet
+  - id: emergency-dispatch
+    name: 911 Dispatch Center
+    segment: corp
+    services:
+      - id: dispatch-psap
+        name: PSAP Call-Taking
+        kind: ot
+        exposure: ot
+      - id: dispatch-radio-gw
+        name: Radio Gateway
+        kind: ot
+        exposure: ot
+  - id: phoenix-pharmacy
+    name: Phoenix Pharmacy
+    segment: corp
+    services:
+      - id: pharmacy-pos
+        name: POS Terminal
+        kind: pos
+        exposure: intranet
+      - id: pharmacy-his
+        name: Pharmacy HIS
+        kind: api
+        exposure: intranet
+      - id: pharmacy-vpn-endpoint
+        name: WireGuard Endpoint (MSP)
+        kind: vpn
+        exposure: mgmt
+      - id: pharmacy-camera-nvr
+        name: CCTV NVR
+        kind: cctv
+        exposure: ot
+  - id: metro-general-hospital
+    name: Metro General Hospital
+    segment: corp
+    services:
+      - id: hospital-ehr
+        name: Electronic Health Records
+        kind: api
+        exposure: intranet
+      - id: hospital-pacs
+        name: Imaging (PACS)
+        kind: api
+        exposure: intranet
+      - id: hospital-portal
+        name: Patient Portal
+        kind: web
+        exposure: public
+      - id: hospital-iot-monitors
+        name: Patient Monitors
+        kind: ot
+        exposure: ot
+      - id: hospital-backup
+        name: Backup Service
+        kind: backup
+        exposure: mgmt
+  - id: st-marys-clinic
+    name: St. Mary's Clinic
+    segment: corp
+    services:
+      - id: clinic-ehr
+        name: Clinic EHR
+        kind: api
+        exposure: intranet
+      - id: clinic-portal
+        name: Patient Portal
+        kind: web
+        exposure: public
+  - id: redcross-blood-bank
+    name: Red Cross Blood Bank
+    segment: corp
+    services:
+      - id: bloodbank-inventory
+        name: Inventory API
+        kind: api
+        exposure: intranet
+      - id: bloodbank-db
+        name: Donors Database
+        kind: db
+        exposure: intranet
+  - id: metro-water
+    name: Metro Water
+    segment: corp
+    services:
+      - id: water-scada
+        name: Pump SCADA
+        kind: ot
+        exposure: ot
+      - id: water-billing-api
+        name: Billing API
+        kind: api
+        exposure: intranet
+      - id: water-customer-portal
+        name: Customer Portal
+        kind: web
+        exposure: public
+  - id: power-grid-co
+    name: Power Grid Co.
+    segment: corp
+    services:
+      - id: grid-scada
+        name: Substation SCADA
+        kind: ot
+        exposure: ot
+      - id: grid-outage-api
+        name: Outage Map API
+        kind: api
+        exposure: public
+      - id: grid-billing
+        name: Billing API
+        kind: api
+        exposure: intranet
+  - id: metro-transit
+    name: Metro Transit
+    segment: corp
+    services:
+      - id: transit-fare-api
+        name: Fare API
+        kind: api
+        exposure: public
+      - id: transit-ticket-pos
+        name: Ticket POS
+        kind: pos
+        exposure: intranet
+      - id: transit-avl
+        name: Fleet GPS (AVL)
+        kind: ot
+        exposure: ot
+      - id: traffic-controller
+        name: Traffic Light Controller
+        kind: ot
+        exposure: ot
+  - id: telecom-inc
+    name: Telecom Inc.
+    segment: corp
+    services:
+      - id: telecom-billing
+        name: Billing System
+        kind: api
+        exposure: intranet
+      - id: telecom-dns-resolver
+        name: DNS Resolver
+        kind: dns
+        exposure: public
+      - id: telecom-smsc
+        name: SMSC
+        kind: api
+        exposure: intranet
+  - id: cititech-it
+    name: CitiTech MSP
+    segment: mgmt
+    services:
+      - id: msp-rmm
+        name: RMM Console
+        kind: rmm
+        exposure: mgmt
+      - id: msp-siem
+        name: SIEM Collector
+        kind: log
+        exposure: mgmt
+      - id: msp-vpn-hub
+        name: WireGuard Hub
+        kind: vpn
+        exposure: mgmt
+      - id: msp-backup-vault
+        name: Backup Vault
+        kind: backup
+        exposure: mgmt
+  - id: first-bank-cybercity
+    name: First Bank
+    segment: corp
+    services:
+      - id: bank-core
+        name: Core Banking
+        kind: api
+        exposure: intranet
+      - id: bank-ibanking
+        name: Internet Banking
+        kind: web
+        exposure: public
+      - id: bank-atm-switch
+        name: ATM Switch
+        kind: api
+        exposure: intranet
+      - id: bank-db
+        name: Customer Database
+        kind: db
+        exposure: intranet
+  - id: paynet-processor
+    name: PayNet
+    segment: corp
+    services:
+      - id: paynet-hsm
+        name: HSM
+        kind: api
+        exposure: intranet
+      - id: paynet-api
+        name: Payment API
+        kind: api
+        exposure: public
+      - id: paynet-db
+        name: Transactions Database
+        kind: db
+        exposure: intranet
+  - id: credit-union
+    name: Credit Union
+    segment: corp
+    services:
+      - id: cu-ibanking
+        name: Internet Banking
+        kind: web
+        exposure: public
+      - id: cu-core
+        name: Core Banking
+        kind: api
+        exposure: intranet
+  - id: insurance-hub
+    name: Insurance Hub
+    segment: corp
+    services:
+      - id: ins-portal
+        name: Customer Portal
+        kind: web
+        exposure: public
+      - id: ins-claims
+        name: Claims API
+        kind: api
+        exposure: intranet
+  - id: megamall-chain
+    name: MegaMall Chain
+    segment: corp
+    services:
+      - id: mall-pos
+        name: POS Terminals
+        kind: pos
+        exposure: intranet
+      - id: mall-loyalty
+        name: Loyalty API
+        kind: api
+        exposure: public
+      - id: mall-camera-nvr
+        name: CCTV NVR
+        kind: cctv
+        exposure: ot
+      - id: mall-wifi
+        name: Guest Wi-Fi
+        kind: api
+        exposure: public
+  - id: grocer-everyday
+    name: Grocer Everyday
+    segment: corp
+    services:
+      - id: grocer-pos
+        name: POS Terminals
+        kind: pos
+        exposure: intranet
+      - id: grocer-inventory
+        name: Inventory API
+        kind: api
+        exposure: intranet
+      - id: grocer-loyalty
+        name: Loyalty API
+        kind: api
+        exposure: public
+  - id: gas-stations-net
+    name: Gas Stations Net
+    segment: corp
+    services:
+      - id: gas-pos
+        name: Fuel POS
+        kind: pos
+        exposure: intranet
+      - id: gas-tank-gauge
+        name: Tank Gauge
+        kind: ot
+        exposure: ot
+      - id: gas-loyalty
+        name: Loyalty API
+        kind: api
+        exposure: public
+  - id: media-center
+    name: Media Center
+    segment: corp
+    services:
+      - id: media-portal
+        name: News Portal
+        kind: web
+        exposure: public
+      - id: media-cms
+        name: CMS
+        kind: api
+        exposure: intranet
+      - id: media-stream
+        name: Live Stream
+        kind: api
+        exposure: public
+  - id: metro-radio
+    name: Metro Radio
+    segment: corp
+    services:
+      - id: radio-stream
+        name: Audio Stream
+        kind: api
+        exposure: public
+      - id: radio-studio-automation
+        name: Studio Automation
+        kind: api
+        exposure: intranet
+  - id: public-schools-district
+    name: Public Schools District
+    segment: corp
+    services:
+      - id: schools-sis
+        name: Student Information System
+        kind: api
+        exposure: intranet
+      - id: schools-portal
+        name: Parent Portal
+        kind: web
+        exposure: public
+      - id: schools-wifi
+        name: School Wi-Fi
+        kind: api
+        exposure: public
+  - id: cybercity-university
+    name: CyberCity University
+    segment: corp
+    services:
+      - id: uni-portal
+        name: University Portal
+        kind: web
+        exposure: public
+      - id: uni-lms
+        name: Learning Management System
+        kind: api
+        exposure: intranet
+      - id: uni-research-cluster
+        name: Research Cluster
+        kind: api
+        exposure: intranet
+      - id: uni-wifi
+        name: Campus Wi-Fi
+        kind: api
+        exposure: public
+  - id: cloudnet-hosting
+    name: CloudNet Hosting
+    segment: mgmt
+    services:
+      - id: cloudnet-customer-portal
+        name: Customer Portal
+        kind: web
+        exposure: public
+      - id: cloudnet-virt
+        name: Virtualization API
+        kind: api
+        exposure: mgmt
+      - id: cloudnet-object-storage
+        name: Object Storage
+        kind: api
+        exposure: mgmt
+  - id: logistics-fleet
+    name: Logistics Fleet
+    segment: corp
+    services:
+      - id: fleet-dispatch
+        name: Dispatch API
+        kind: api
+        exposure: intranet
+      - id: fleet-tracking
+        name: Tracking API
+        kind: api
+        exposure: public
+      - id: fleet-driver-app
+        name: Driver App
+        kind: api
+        exposure: intranet
+decoys: []
