@@ -22,7 +22,7 @@ CyberCity. Он загружает статический топологичес
 │                                                                      │
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────────────────┐  │
 │  │     UI      │    │   Engine    │    │    Scenario Manager     │  │
-│  │  (React/    │◄──►│  (Python)   │◄──►│      (Python)           │  │
+│  │  (React/    │◄──►│    (Go)     │◄──►│      (Python)           │  │
 │  │  WebSocket) │    │             │    │                         │  │
 │  └──────┬──────┘    └──────┬──────┘    └─────────────────────────┘  │
 │         │                   │                                        │
@@ -140,31 +140,72 @@ CyberCity. Он загружает статический топологичес
 9. Снапшот + broadcast в UI
 ```
 
-## Внутреннее устройство движка
+## Внутреннее устройство движка (Onion / Ports-and-Adapters)
 
 ```text
+         Adapters (infra)
+┌─────────────────────────────────────────┐
+│  HTTP/WS (api) │ Kafka (bus) │ PostgreSQL│
+│  TopologyLoader│ ServiceAgent│ Snapshot  │
+└─────────────────────────────────────────┘
+                   │
+                   ▼
+         Application (wiring)
+┌─────────────────────────────────────────┐
+│  NewRuntime: config → ports → engine    │
+└─────────────────────────────────────────┘
+                   │
+                   ▼
+         Domain (core) — pure logic
 ┌─────────────────────────────────────────┐
 │              Engine                     │
 │                                          │
+│  ┌─────────────┐    ┌─────────────────┐ │
+│  │ Event       │◄──►│ Event Processor │ │
+│  │ Processor   │    │                 │ │
+│  └──────┬──────┘    └────────┬────────┘ │
+│         │                     │           │
+│         ▼                     ▼           │
+│  ┌─────────────────────────────────────┐ │
+│  │          StateManager               │ │
+│  │   services, players, scenario      │ │
+│  └─────────────────────────────────────┘ │
+│         │                     │           │
+│         ▼                     ▼           │
 │  ┌─────────────┐    ┌─────────────────┐  │
-│  │ API / WS    │◄──►│ Event Processor │  │
-│  │ (FastAPI)   │    │                 │  │
-│  └──────┬──────┘    └────────┬────────┘  │
-│         │                     │            │
-│         ▼                     ▼            │
-│  ┌─────────────────────────────────────┐  │
-│  │          StateManager               │  │
-│  │   services, players, scenario      │  │
-│  └─────────────────────────────────────┘  │
-│         │                     │            │
-│         ▼                     ▼            │
-│  ┌─────────────┐    ┌─────────────────┐   │
-│  │ EventGraph  │    │  EventRouter    │   │
-│  │  (causal)   │    │  (propagation)  │   │
-│  └─────────────┘    └─────────────────┘   │
+│  │ EventStore  │    │  EventRouter    │  │
+│  │  (port)     │    │  (port/impl)    │  │
+│  └─────────────┘    └─────────────────┘  │
 │                                          │
 └─────────────────────────────────────────┘
 ```
+
+### Domain
+
+- **Чистая логика:** models, StateManager, EventRouter, Engine.
+- **Нет зависимостей от HTTP, Kafka, PostgreSQL, env-переменных.**
+- Все внешние действия проходят через интерфейсы-порты.
+
+### Ports (interfaces)
+
+- `EventStore` — хранение событийного графа.
+- `SnapshotRepository` — снапшоты WorldState.
+- `MessageBus` — pub/sub событий.
+- `ServiceAgent` — управление real/decoy сервисами.
+- `TopologyLoader` — загрузка topology-артефактов.
+- `StateBroadcaster` — рассылка состояния подписчикам.
+
+### Adapters
+
+- `adapters/api` — HTTP + WebSocket на `net/http` + `gorilla/websocket`.
+- `adapters/loader` — парсинг `engine.zip` / `engine.json`.
+- `adapters/memory` — in-memory реализации всех портов для тестов и демо.
+- Будущие: `adapters/postgres`, `adapters/redpanda`, `adapters/grpc-agent`.
+
+### Application
+
+- `application.NewRuntime(cfg)` — composition root. Создаёт адаптеры,
+  маппит config в domain-config и собирает engine.
 
 ### StateManager
 

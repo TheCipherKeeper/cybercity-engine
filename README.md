@@ -1,14 +1,14 @@
 # CyberCity — Engine
 
 [![Part of CyberCity](https://img.shields.io/badge/CyberCity-composition-blueviolet)](https://github.com/TheCipherKeeper/cybercity)
-[![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python)](https://python.org)
+[![Go](https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go)](https://go.dev)
 [![License: MIT](https://img.shields.io/badge/code-MIT-green)](LICENSE)
 
 Событийный runtime-движок для цифрового двойника CyberCity.
 
-Это **Python reference-реализация** движка. Она намеренно сделана на Python для
-быстрой итерации и валидации концепции, с планируемым в будущем переносом на
-Go для production-grade производительности.
+Реализован на **Go**. Движок загружает статический топологический граф из
+`cybercity-data`, ведёт runtime-состояние города и обрабатывает поток событий
+через graph-aware router. См. ADR-0006 для обоснования выбора языка.
 
 ## Архитектура
 
@@ -45,10 +45,10 @@ Runtime-состояние сохраняется в **PostgreSQL**.
 
 ```bash
 # 1. Запуск зависимостей
-uv run docker compose up -d postgres redpanda minio
+docker compose up -d postgres redpanda minio
 
 # 2. Сборка или копирование артефакта города из cybercity-data, затем запуск движка
-uv run cybercity-engine --engine-zip /path/to/engine.zip
+go run ./cmd/cybercity-engine --engine-zip /path/to/engine.zip
 ```
 
 Подробнее — в [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).

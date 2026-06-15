@@ -19,8 +19,10 @@
   Событийный граф строится в runtime.
 - **Engine — единственный мутатор состояния.** API и WebSocket только
   валидируют вход и порождают события.
-- **Python-first.** Этот репозиторий — reference implementation на Python для
-  скорости итераций. Production port на Go запланирован позже.
+- **Go-first.** Движок реализован на Go (см. ADR-0006).
+- **Onion / ports-and-adapters.** Domain (`internal/domain/`) не импортирует
+  adapters, config или application. Все внешние зависимости проходят через
+  ports (`internal/domain/ports/`).
 - **LLM — помощник, не хозяин.** LLM пишет код и YAML, валидаторы и тесты
   решают.
 
@@ -28,10 +30,10 @@
 
 ### Что агенту МОЖНО
 
-- Писать Python-код в `src/cybercity_engine/` и `tests/`.
-- Редактировать `pyproject.toml` зависимости с обоснованием.
+- Писать Go-код в `cmd/` и `internal/`.
+- Редактировать `go.mod` зависимости с обоснованием.
 - Создавать новые ADR, если меняется архитектурное решение.
-- Запускать `pytest`, `ruff`, `mypy`.
+- Запускать `go test ./...`, `go vet ./...`, `go build ./cmd/cybercity-engine`.
 - Обновлять `README.md`, `AGENTS.md` при изменении структуры.
 
 ### Чего агенту НЕЛЬЗЯ
@@ -47,20 +49,27 @@
 cybercity-engine/
 ├── README.md                         # overview
 ├── AGENTS.md                         # этот файл
-├── pyproject.toml                    # Python package + deps
+├── go.mod                            # Go module + deps
+├── go.sum                            # pinned deps
 ├── compose.yaml                      # local dev dependencies
-├── src/cybercity_engine/
-│   ├── __init__.py
-│   ├── __main__.py                   # CLI entry point
-│   ├── api.py                        # FastAPI + WebSocket
-│   ├── bootstrap.py                  # load topology from engine.zip
-│   ├── config.py                     # Pydantic settings
-│   ├── engine.py                     # main simulation loop
-│   ├── events.py                     # event graph store
-│   ├── models.py                     # topology + event models
-│   ├── router.py                     # event propagation rules
-│   └── state.py                      # runtime state manager
-├── tests/                            # pytest suite
+├── cmd/cybercity-engine/             # CLI entry point
+│   └── main.go
+├── internal/                         # implementation
+│   ├── application/                  # composition root
+│   │   └── runtime.go
+│   ├── config/                       # env + flags
+│   ├── domain/                       # чистая логика (ядро)
+│   │   ├── models/                   # topology + event + state models
+│   │   ├── state/                    # StateManager
+│   │   ├── router/                   # propagation rules
+│   │   ├── engine/                   # tick loop + handlers
+│   │   └── ports/                    # interfaces (EventStore, Bus, ...)
+│   └── adapters/                     # concrete implementations
+│       ├── api/                      # HTTP + WebSocket server
+│       ├── loader/                   # topology loader
+│       ├── memory/                   # in-memory store / bus / broadcaster
+│       └── (postgres, redpanda — future)
+├── ..._test.go                       # unit tests inside packages
 └── docs/                             # документация
     ├── VISION.md
     ├── ARCHITECTURE.md
@@ -76,7 +85,7 @@ cybercity-engine/
 
 1. Прочитать соответствующий ADR и текущий код.
 2. Внести изменения.
-3. Запустить `pytest`, `ruff check`, `mypy --strict src/cybercity_engine`.
+3. Запустить `go test ./...`, `go vet ./...`, `go build ./cmd/cybercity-engine`.
 4. Показать результат пользователю. Не коммитить.
 
 ## Язык документации

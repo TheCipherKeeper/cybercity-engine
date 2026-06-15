@@ -8,40 +8,42 @@ cd /path/to/cybercity-engine
 # Запуск зависимостей
 docker compose up -d postgres redpanda minio
 
-# Установка зависимостей
-uv sync
-
-# Запуск тестов
-uv run pytest -q
-
-# Линтеры
-uv run ruff check
-uv run mypy --strict src/cybercity_engine
+# Загрузка зависимостей и запуск тестов
+go mod tidy
+go test ./...
 
 # Запуск движка локально
-uv run cybercity-engine --engine-zip /path/to/engine.zip
+go run ./cmd/cybercity-engine --engine-zip /path/to/engine.zip
 ```
 
 ## Структура проекта
 
 ```
 cybercity-engine/
-├── pyproject.toml              # пакет + deps + конфиг инструментов
-├── compose.yaml                # локальные зависимости
-├── README.md                   # обзор
-├── AGENTS.md                   # правила для AI-агентов
-├── src/cybercity_engine/       # исходники движка
-│   ├── models.py               # topology + event + state модели
-│   ├── bootstrap.py            # загрузка topology из engine.zip
-│   ├── state.py                # StateManager
-│   ├── events.py               # EventGraph
-│   ├── router.py               # EventRouter
-│   ├── engine.py               # главный tick loop + handlers
-│   ├── api.py                  # FastAPI + WebSocket
-│   ├── config.py               # Pydantic-настройки
-│   └── __main__.py             # CLI entry point
-├── tests/                      # pytest-suite
-└── docs/                       # документация
+├── go.mod                       # Go module + deps
+├── go.sum                       # pinned deps
+├── compose.yaml                 # локальные зависимости
+├── README.md                    # обзор
+├── AGENTS.md                    # правила для AI-агентов
+├── cmd/cybercity-engine/        # CLI entry point
+│   └── main.go
+├── internal/                    # исходники
+│   ├── application/             # composition root
+│   │   └── runtime.go
+│   ├── config/                  # env + flags
+│   ├── domain/                  # ядро (чистая логика)
+│   │   ├── models/              # Topology*, Event*, WorldState
+│   │   ├── state/               # StateManager
+│   │   ├── router/              # EventRouter / propagation rules
+│   │   ├── engine/              # tick loop + handlers
+│   │   └── ports/               # интерфейсы (EventStore, Bus, ...)
+│   └── adapters/                # конкретные реализации портов
+│       ├── api/                 # HTTP + WebSocket
+│       ├── loader/              # topology loader
+│       ├── memory/              # in-memory store / bus / broadcaster
+│       └── (postgres, redpanda — будущее)
+├── internal/*/*_test.go         # unit tests
+└── docs/                        # документация
     ├── VISION.md
     ├── ARCHITECTURE.md
     ├── DATA_FLOW.md
@@ -55,44 +57,50 @@ cybercity-engine/
 
 ### Добавление нового типа события
 
-1. Добавить значение в `EventType` в `src/cybercity_engine/models.py`.
-2. Добавить handler в `src/cybercity_engine/engine.py` и зарегистрировать в
-   `Engine._handlers`.
-3. Добавить тесты в `tests/test_engine.py`.
+1. Добавить константу в `EventType` в `internal/domain/models/models.go`.
+2. Добавить handler в `internal/domain/engine/handlers.go` и зарегистрировать
+   в `defaultHandlers()`.
+3. Добавить тесты в `internal/domain/engine/engine_test.go`.
 4. Обновить `docs/MODELS.md`.
 
 ### Добавление propagation-правила
 
-1. Написать чистую функцию в `src/cybercity_engine/router.py`.
-2. Зарегистрировать в `EventRouter._default_rules()`.
+1. Написать чистую функцию в `internal/domain/router/router.go`.
+2. Зарегистрировать в `defaultRules()`.
 3. Добавить тесты на условия propagation.
 
 ### Изменение API
 
 1. Эндпоинты остаются тонкими: преобразовать вход в событие и поставить в
    очередь.
-2. Никогда не мутировать `WorldState` напрямую из `api.py`.
+2. Никогда не мутировать `WorldState` напрямую из `adapters/api`.
 3. Документировать изменения в `docs/API.md`.
+
+### Добавление нового backend (Postgres, Redpanda)
+
+1. Добавить новый пакет в `internal/adapters/<name>/`.
+2. Реализовать соответствующий порт из `internal/domain/ports/`.
+3. В `internal/application/runtime.go` выбрать адаптер на основе config.
+4. domain engine при этом не меняется.
 
 ## Тестирование
 
 ```bash
 # Все тесты
-uv run pytest -q
+go test ./...
 
-# С покрытием
-uv run pytest -q --cov=src/cybercity_engine --cov-report=term-missing
+# С подробным выводом
+go test -v ./...
 
-# Конкретный тест
-uv run pytest tests/test_engine.py -q
+# Конкретный пакет
+go test ./internal/engine -v
 ```
 
-## Линтинг и типизация
+## Линтинг и проверки
 
 ```bash
-uv run ruff check
-uv run ruff check --fix    # автофикс где возможно
-uv run mypy --strict src/cybercity_engine
+go vet ./...
+go build ./cmd/cybercity-engine
 ```
 
 ## Стиль коммитов
@@ -120,7 +128,7 @@ Breaking changes должны включать `BREAKING CHANGE:` в тело.
 
 ```bash
 # Посмотреть структуру артефакта города
-uv run python -c "from cybercity_engine.bootstrap import load_topology; t = load_topology('engine.zip'); print(len(t.services), len(t.edges))"
+go run ./cmd/cybercity-engine --engine-zip engine.zip 2>&1 | head
 
 # Подключиться к локальному PostgreSQL
 psql postgresql://engine:engine@localhost:5432/cybercity
@@ -147,10 +155,10 @@ docker compose up -d postgres
 docker compose logs -f redpanda
 ```
 
-### Ошибки mypy после изменений моделей
+### Ошибки компиляции после изменений моделей
 
-Запускать с `--show-error-codes` и проверять утечку `Any`, missing return
-annotations и использование literal-enum.
+Запускать `go vet ./...` и `go build ./cmd/cybercity-engine`. Go статически
+проверит типы и неиспользуемые поля.
 
 ## Связанные документы
 

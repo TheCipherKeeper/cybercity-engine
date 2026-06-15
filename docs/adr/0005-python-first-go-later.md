@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [ADR-0006: Go-first implementation](0006-go-first.md)
 
 ## Context
 

@@ -168,8 +168,8 @@ Append-only causal graph.
 
 ## Сериализация
 
-- Модели используют Pydantic v2.
-- API возвращает JSON через `model_dump(mode="json")`.
+- Модели — чистые Go struct с JSON-тегами.
+- API возвращает JSON через стандартный `encoding/json`.
 - PostgreSQL хранит снапшоты и события как JSONB.
 - Сообщения в Redpanda по умолчанию JSON; позже может быть Avro.
 

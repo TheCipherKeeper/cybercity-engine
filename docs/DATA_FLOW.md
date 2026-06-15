@@ -10,7 +10,7 @@
 UI игрока
     │ POST /commands { action: "SCAN", target: "bank-web", player_id: "p1" }
     ▼
-FastAPI /commands endpoint
+HTTP POST /commands endpoint
     │ преобразует команду в EventNode(COMMAND)
     ▼
 Engine.submit_command()

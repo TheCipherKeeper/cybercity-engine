@@ -7,9 +7,8 @@
 
 ### Требования
 
-- Python 3.12+
+- Go 1.22+
 - Docker / Docker Compose
-- `uv`
 
 ### 1. Запуск зависимостей
 
@@ -23,10 +22,11 @@ docker compose up -d postgres redpanda minio
 - Redpanda на `localhost:9092`
 - MinIO на `localhost:9000`
 
-### 2. Синхронизация Python-окружения
+### 2. Сборка движка
 
 ```bash
-uv sync
+go mod tidy
+go build ./cmd/cybercity-engine
 ```
 
 ### 3. Сборка или загрузка артефакта города
@@ -35,7 +35,7 @@ uv sync
 
 ```bash
 cd ../cybercity-data
-uv run cybercity-data build . --clean --seed 42
+cybercity-data build . --clean --seed 42
 ```
 
 Скопируйте `build/engine.zip` в директорию движка или сделайте доступным через
@@ -44,7 +44,9 @@ MinIO.
 ### 4. Запуск движка
 
 ```bash
-uv run cybercity-engine --engine-zip engine.zip
+go run ./cmd/cybercity-engine --engine-zip engine.zip
+# или, после сборки:
+./cybercity-engine --engine-zip engine.zip
 ```
 
 ### 5. Проверка
