@@ -1,3 +1,18 @@
+# Go build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+bin/
+/vendor/
+
+# Go test / coverage
+*.test
+*.out
+coverage.html
+coverage.txt
+
+# Python legacy (если осталось локально)
 .venv/
 __pycache__/
 *.pyc
