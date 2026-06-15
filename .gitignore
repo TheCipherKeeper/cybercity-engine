@@ -1,16 +1,16 @@
-# Binaries
-/bin/
-/cmd/*/
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-
-# Test artifacts
-*.test
-*.out
-coverage.*
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+.uv-cache/
 
 # Local config / secrets
 .env
@@ -23,8 +23,5 @@ coverage.*
 .DS_Store
 Thumbs.db
 
-# Generated K8s manifests (re-rendered from network.yml)
+# Generated artifacts
 /network/generated/
-
-# Build cache
-/vendor/

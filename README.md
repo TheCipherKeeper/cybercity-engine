@@ -1,80 +1,90 @@
 # CyberCity — Engine
 
 [![Part of CyberCity](https://img.shields.io/badge/CyberCity-composition-blueviolet)](https://github.com/TheCipherKeeper/cybercity)
-[![Go](https://img.shields.io/badge/Go-1.22-00ADD8?logo=go)](https://go.dev)
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/code-MIT-green)](LICENSE)
-[![Docs: CC BY 4.0](https://img.shields.io/badge/docs-CC%20BY%204.0-lightgrey)](LICENSE-DOCS)
 
-Go-каркас кибер-полигона **CyberCity**: событийное ядро, сетевая модель,
-валидатор, движок симуляции, K8s-рендер манифестов. Это **оркестратор**
-и «компилятор» города. Обложка проекта — [cybercity](https://github.com/TheCipherKeeper/cybercity).
+Event-driven runtime engine for the CyberCity digital twin.
 
-> Канонический вход: [`master.md`](master.md) — философия и дорожная карта.
-> Операционные правила для AI-агентов: [`AGENTS.md`](AGENTS.md).
+This is the **Python reference implementation** of the engine. It is intentionally
+developed in Python for rapid iteration and concept validation, with a planned
+future port to Go for production-grade performance.
 
-## Статус
+## Architecture
 
-MVP-скелет. Все пакеты — заглушки с doc-комментариями. Реализация
-идёт поэтапно по `master.md`. Текущая цель: `validate-network` поверх
-`network.yml` (этап 2 дорожной карты).
+The engine is built around **two graphs**:
 
-## Что внутри
+1. **Topology Graph** — static blueprint of the city loaded from `cybercity-data`:
+   - nodes: services (`bank-web`, `hospital-db`, ...)
+   - edges: declared links (`api-call`, `auth`, `db-read`, `backup-of`, ...)
+   - also: inferred edges (same network, same org, exposure chain)
 
+2. **Event Graph** — dynamic causal graph of everything that happens:
+   - nodes: events (scan, compromise, state change, player action)
+   - edges: `caused_by`, `propagated_to`, `triggered_rule`
+   - enables attack provenance, replay, explainability
+
+Events flow through **Redpanda/Kafka** and are processed by the engine tick loop.
+Runtime state is snapshotted to **PostgreSQL**.
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                     Topology Graph                          │
+│          (loaded from cybercity-data engine.zip)              │
+│              services + links + networks                      │
+└────────────────────┬────────────────────────────────────────────┘
+                     │
+                     │ static blueprint
+                     ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      Engine Runtime                           │
+│                                                               │
+│  ┌─────────────┐      ┌─────────────────┐      ┌──────────┐ │
+│  │  API / WS   │◄────►│  Event Processor│◄────►│  Router  │ │
+│  │  (FastAPI)  │      │                 │      │          │ │
+│  └──────┬──────┘      └────────┬────────┘      └────┬─────┘ │
+│         │                       │                   │       │
+│         ▼                       ▼                   ▼       │
+│  ┌─────────────────────────────────────────────────────────┐│
+│  │                    State Manager                         ││
+│  │  services: {id → ServiceState}                           ││
+│  │  players:  {id → PlayerState}                            ││
+│  │  scenario: ScenarioState | None                          ││
+│  └─────────────────────────────────────────────────────────┘│
+│                                                               │
+└────────────────────┬──────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     Event Graph / Stream                    │
+│              (Redpanda + PostgreSQL snapshots)                │
+└─────────────────────────────────────────────────────────────┘
 ```
-cmd/                           точки входа
-  validate-network/            валидатор network.yml (заглушка)
-  render-manifests/            рендер K8s-манифестов (заглушка)
-internal/
-  events/                      событийное ядро (ADR-0004)        — пакет-заглушка
-  network/                     модель network.yml + валидатор     — пакет-заглушка
-  sim/                         движок симуляции                   — пакет-заглушка
-  runtime/                     K8s-адаптеры                       — пакет-заглушка
-  scenario/                    пакеты сценариев                   — пакет-заглушка
-network.yml                    канонический YAML (сеть + decoys)
-network.md                     человекочитаемая проекция
-docs/adr/                      архитектурные decision records
-master.md                      философия и дорожная карта
-AGENTS.md                      операционные правила для AI-агентов
-```
 
-## Быстрый старт
+## Quick start (local Docker Compose)
 
 ```bash
-# сейчас (MVP)
-go run ./cmd/validate-network
-# → validate-network: not implemented yet
+# 1. Start dependencies
+uv run docker compose up -d postgres redpanda minio
 
-go run ./cmd/render-manifests
-# → render-manifests: not implemented yet
+# 2. Run engine
+uv run cybercity-engine --config envs/local.yaml
 
-# когда реализуем
-go run ./cmd/validate-network            # прогнать network.yml
-go run ./cmd/render-manifests            # сгенерить K8s-манифесты в network/generated/
-kubectl --dry-run=client apply -f network/generated/
+# 3. Or run in development mode with hot reload
+uv run uvicorn cybercity_engine.api:app --reload
 ```
 
-## Принципы
+## CLI
 
-- **События — единственный источник истины.** Состояние = проекция потока.
-- **Сеть декларативна.** Один YAML описывает всё. K8s — его проекция.
-- **Безопасность по умолчанию.** Сегменты изолированы, каналы — явные.
-- **LLM — помощник, не хозяин.** LLM пишет YAML, код валидирует, человек решает.
-- **Воспроизводимость.** Один вход → один выход, детерминированный режим.
+```bash
+cybercity-engine --config envs/local.yaml
+```
 
-Подробности — в [`master.md`](master.md) и серии ADR в [`docs/adr/`](docs/adr/).
+## Status
 
-## Композиция CyberCity
+Early development. Core models and bootstrap are being established.
 
-| Слой | Репозиторий |
-|---|---|
-| Обложка / витрина | [cybercity](https://github.com/TheCipherKeeper/cybercity) |
-| **Engine (этот репо)** | **cybercity-engine** |
-| Данные | [cybercity-data](https://github.com/TheCipherKeeper/cybercity-data) |
-| UI | [cybercity-ui](https://github.com/TheCipherKeeper/cybercity-ui) |
-| Агенты | [cybercity-agents](https://github.com/TheCipherKeeper/cybercity-agents) |
-| Blueprints | [cybercity-blueprints](https://github.com/TheCipherKeeper/cybercity-blueprints) |
+## License
 
-## Лицензия
-
-- Код: [MIT](LICENSE)
-- Документация (`master.md`, ADR, комментарии): [CC BY 4.0](LICENSE-DOCS)
+- Code: [MIT](LICENSE)
+- Documentation: [CC BY 4.0](LICENSE-DOCS)
