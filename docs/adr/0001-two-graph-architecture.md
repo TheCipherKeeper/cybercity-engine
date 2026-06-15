@@ -60,3 +60,5 @@ routing through the `EventRouter`.
 
 - `cybercity-data` provides the canonical topology.
 - `EventRouter` consumes topology edges to decide propagation.
+- `docs/ARCHITECTURE.md` — high-level system architecture.
+- `docs/MODELS.md` — detailed data models.

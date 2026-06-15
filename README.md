@@ -27,39 +27,18 @@ The engine is built around **two graphs**:
 Events flow through **Redpanda/Kafka** and are processed by the engine tick loop.
 Runtime state is snapshotted to **PostgreSQL**.
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                     Topology Graph                          │
-│          (loaded from cybercity-data engine.zip)              │
-│              services + links + networks                      │
-└────────────────────┬────────────────────────────────────────────┘
-                     │
-                     │ static blueprint
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      Engine Runtime                           │
-│                                                               │
-│  ┌─────────────┐      ┌─────────────────┐      ┌──────────┐ │
-│  │  API / WS   │◄────►│  Event Processor│◄────►│  Router  │ │
-│  │  (FastAPI)  │      │                 │      │          │ │
-│  └──────┬──────┘      └────────┬────────┘      └────┬─────┘ │
-│         │                       │                   │       │
-│         ▼                       ▼                   ▼       │
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │                    State Manager                         ││
-│  │  services: {id → ServiceState}                           ││
-│  │  players:  {id → PlayerState}                            ││
-│  │  scenario: ScenarioState | None                          ││
-│  └─────────────────────────────────────────────────────────┘│
-│                                                               │
-└────────────────────┬──────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│                     Event Graph / Stream                    │
-│              (Redpanda + PostgreSQL snapshots)                │
-└─────────────────────────────────────────────────────────────┘
-```
+## Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [`docs/VISION.md`](docs/VISION.md) | Why the project exists and what it wants to be. |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | High-level architecture and system context. |
+| [`docs/DATA_FLOW.md`](docs/DATA_FLOW.md) | How events move through the system. |
+| [`docs/MODELS.md`](docs/MODELS.md) | Data model reference. |
+| [`docs/API.md`](docs/API.md) | HTTP and WebSocket protocol. |
+| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Local dev, home lab, production sketch. |
+| [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) | How to work on the engine. |
+| [`docs/adr/`](docs/adr/) | Architecture decision records. |
 
 ## Quick start (local Docker Compose)
 
@@ -67,22 +46,17 @@ Runtime state is snapshotted to **PostgreSQL**.
 # 1. Start dependencies
 uv run docker compose up -d postgres redpanda minio
 
-# 2. Run engine
-uv run cybercity-engine --config envs/local.yaml
-
-# 3. Or run in development mode with hot reload
-uv run uvicorn cybercity_engine.api:app --reload
+# 2. Build or copy a city artifact from cybercity-data, then run engine
+uv run cybercity-engine --engine-zip /path/to/engine.zip
 ```
 
-## CLI
-
-```bash
-cybercity-engine --config envs/local.yaml
-```
+See [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) for the full workflow.
 
 ## Status
 
-Early development. Core models and bootstrap are being established.
+Core architecture, models, bootstrap, engine loop, API skeleton, and
+documentation are in place. Next: PostgreSQL persistence, Redpanda integration,
+background processes, and the first scenario.
 
 ## License
 
