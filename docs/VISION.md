@@ -1,135 +1,138 @@
 # CyberCity Engine — Vision
 
-## What is CyberCity?
+## Что такое CyberCity?
 
-CyberCity is a **digital twin of a city's IT/OT infrastructure** designed as a
-platform for cybersecurity training, research, and public demonstration.
+CyberCity — это **цифровой двойник городской ИТ/ОТ-инфраструктуры**, созданный
+как платформа для обучения кибербезопасности, исследований и публичной
+демонстрации.
 
-It models a fictional city as a directed graph:
+Город моделируется как ориентированный граф:
 
-- **Organizations** represent real-world entities: banks, hospitals, power
-  utilities, government offices, schools, telecoms.
-- **Services** are the nodes: web portals, databases, SCADA gateways, DNS,
-  backups, workstations.
-- **Links** are the edges: authentication flows, API calls, database reads,
-  backup streams, vendor VPNs.
+- **Организации** представляют реальные сущности: банки, больницы,
+  энергетические компании, правительственные учреждения, школы, телекомы.
+- **Сервисы** — узлы графа: веб-порталы, базы данных, SCADA-шлюзы, DNS,
+  бэкапы, рабочие станции.
+- **Связи** — рёбра: потоки аутентификации, API-вызовы, чтение БД,
+  резервные копии, vendor VPN.
 
-The goal is not to build yet another vulnerable-by-design CTF image, but a
-**living, observable, explainable city** where security incidents propagate
-through dependencies, where players can trace attack paths, and where every
-state change has a recorded cause.
+Цель — не создать очередную уязвимую CTF-машинку, а **живой, наблюдаемый,
+объяснимый город**, где инциденты безопасности распространяются через
+зависимости, где игроки могут прослеживать пути атак, а каждое изменение
+состояния имеет записанную причину.
 
-## Why this project exists
+## Зачем существует этот проект
 
-1. **Public footprint for a senior engineer.** The project demonstrates
-   architecture, distributed systems, platform engineering, security domain
-   knowledge, and operational discipline in a single coherent system.
+1. **Публичный след для senior-инженера.** Проект демонстрирует
+   архитектуру, распределённые системы, platform engineering, знание домена
+   кибербезопасности и операционную дисциплину в единой целостной системе.
 
-2. **Reference implementation of an event-driven digital twin.** Many security
-   platforms need causal provenance, replay, and graph-based propagation. This
-   engine explores those ideas in a concrete, testable form.
+2. **Reference implementation event-driven digital twin.** Многие
+   security-платформы нуждаются в causal provenance, replay и graph-based
+   propagation. Этот движок исследует эти идеи в конкретной, тестируемой форме.
 
-3. **Playground for hybrid cyber ranges.** It bridges simulated services and
-   real virtual machines through a common event bus, making it possible to
-   start small and grow into a full lab.
+3. **Площадка для hybrid cyber ranges.** Он соединяет симулированные
+   сервисы и реальные виртуальные машины через общий event bus, позволяя
+   начать маленьким и масштабироваться до полноценного полигона.
 
-## Guiding principles
+## Принципы
 
 ### Data as code
 
-The city is declared in YAML under `cybercity-data`. It is versioned,
-validated, and rendered into artifacts. The engine consumes those artifacts,
-never hard-codes topology.
+Город декларируется в YAML в `cybercity-data`. Он версионируется,
+валидируется и рендерится в артефакты. Движок потребляет эти артефакты,
+никогда не хардкодит топологию.
 
-### Events as the single source of truth
+### События — единственный источник истины
 
-Runtime state is a projection of the event stream. If you know all events, you
-can reconstruct the entire history of the city. This enables:
+Runtime-состояние — это проекция потока событий. Если известны все события,
+можно восстановить всю историю города. Это даёт:
 
-- audit and compliance;
-- replay and what-if analysis;
-- explainable state transitions;
-- debugging and scenario review.
+- аудит и compliance;
+- replay и what-if анализ;
+- объяснимые переходы состояний;
+- отладку и разбор сценариев.
 
-### Two graphs, one runtime
+### Два графа, один runtime
 
-- **Topology graph** answers: *what is connected to what?*
-- **Event graph** answers: *what happened and why?*
+- **Топологический граф** отвечает: *что с чем связано?*
+- **Событийный граф** отвечает: *что произошло и почему?*
 
-They are separate but linked. Topology provides the rails; events describe the
-traffic on those rails.
+Они разделены, но связаны. Топология — это рельсы; события — поезда на этих
+рельсах.
 
-### Engine as the sole mutator
+### Engine — единственный мутатор
 
-Only the engine changes the world state. UI, scenario manager, agents, and real
-services send events; the engine validates and applies them. This boundary keeps
-consistency simple and makes the system observable.
+Только движок изменяет состояние мира. UI, scenario manager, агенты и реальные
+сервисы шлют события; движок валидирует и применяет их. Эта граница
+упрощает консистентность и делает систему наблюдаемой.
 
 ### Hybrid by design
 
-A service can be:
+Сервис может быть:
 
-- **simulated** — lightweight, engine-managed decoy;
-- **real** — a VM or container running real software;
-- **decoy** — a deliberately attractive fake target.
+- **simulated** — лёгкий, управляемый движком decoy;
+- **real** — VM или контейнер с настоящим ПО;
+- **decoy** — специально привлекательная фейковая цель.
 
-The engine treats all three uniformly at the event level. The difference is in
-who answers the event: the engine itself or an external agent.
+На уровне событий движок обращается ко всем тремя одинаково. Разница в том,
+кто отвечает на событие: сам движок или внешний агент.
 
 ### Python first, Go later
 
-This engine is intentionally written in Python for rapid iteration and clarity.
-When the architecture stabilizes, a production-grade Go port may follow. The
-Python version remains the **reference implementation** for concepts, tests, and
-ADRs.
+Движок намеренно написан на Python для быстрой итерации и ясности. Когда
+архитектура стабилизируется, может последовать production-grade перенос на
+Go. Python-версия остаётся **reference implementation** для концепций, тестов
+и ADR.
 
-### Secure by default
+### Безопасность по умолчанию
 
-- Network segmentation is explicit.
-- Secrets and credentials are never committed.
-- Public access is read-only and tunnelled.
-- OT/ICS segments are isolated from management and public networks.
+- Сетевая сегментация явная.
+- Секреты и учётные данные никогда не коммитятся.
+- Публичный доступ только read-only и через туннель.
+- OT/ICS-сегменты изолированы от management и публичных сетей.
 
-## Target audiences
+## Целевые аудитории
 
-| Audience | What they get |
-|----------|---------------|
-| **Recruiters / hiring managers** | A coherent, documented, tested system with clear architecture and public demo. |
-| **Security engineers** | A model for attack surface, propagation, incident response training. |
-| **Platform engineers** | An example of event-driven runtime, GitOps, observability, hybrid execution. |
-| **Students / learners** | A way to see how infrastructure dependencies create cascading risk. |
-| **Future contributors** | Clear ADRs, boundaries, and extension points. |
+| Аудитория | Что она получает |
+|-----------|------------------|
+| **Рекрутеры / hiring managers** | Целостная, документированная, протестированная система с чёткой архитектурой и публичной демонстрацией. |
+| **Security-инженеры** | Модель attack surface, propagation, incident response training. |
+| **Platform-инженеры** | Пример event-driven runtime, GitOps, observability, hybrid execution. |
+| **Студенты / учащиеся** | Возможность увидеть, как инфраструктурные зависимости порождают каскадные риски. |
+| **Будущие контрибьюторы** | Чёткие ADR, границы и точки расширения. |
 
-## Success criteria
+## Критерии успеха
 
-The project is successful when:
+Проект считается успешным, когда:
 
-1. A visitor can open a public URL and see a live, interactive city graph.
-2. A player can trigger an event and watch it propagate through dependencies.
-3. Every state change in the city is explainable via the event graph.
-4. The repository has clear architecture, ADRs, tests, and CI/CD.
-5. The system can run on a home lab and scale conceptually to a production
+1. Посетитель может открыть публичный URL и увидеть живой интерактивный
+   граф города.
+2. Игрок может вызвать событие и наблюдать, как оно распространяется через
+   зависимости.
+3. Каждое изменение состояния города объяснимо через событийный граф.
+4. Репозиторий имеет чёткую архитектуру, ADR, тесты и CI/CD.
+5. Система работает на home lab и концептуально масштабируется до production
    cyber range.
 
 ## Non-goals
 
-- Full physical realism of water, power, or transport.
-- Replacing commercial cyber-range platforms.
-- Real-world traffic simulation at ISP scale.
-- Game engine-quality 3D visualization.
+- Полная физическая реалистичность воды, электричества или транспорта.
+- Замена коммерческим cyber-range платформам.
+- Реалистичная эмуляция трафика масштаба ISP.
+- 3D-визуализация уровня игрового движка.
 
-## Related repositories
+## Связанные репозитории
 
-| Repository | Role |
-|------------|------|
-| `cybercity` | Landing page and public showcase. |
-| `cybercity-data` | Canonical declarative city model, validator, builder. |
-| `cybercity-engine` | **This repository** — event-driven runtime. |
-| `cybercity-ui` | Web frontend for visualization and interaction. |
-| `cybercity-agents` | LLM-assisted content generators (future). |
-| `cybercity-blueprints` | Reusable org/service templates (future). |
+| Репозиторий | Роль |
+|-------------|------|
+| `cybercity` | Landing page и публичная витрина. |
+| `cybercity-data` | Каноническая декларативная модель города, валидатор, билдер. |
+| `cybercity-engine` | **Этот репозиторий** — event-driven runtime. |
+| `cybercity-ui` | Web-фронтенд для визуализации и взаимодействия. |
+| `cybercity-agents` | LLM-ассистенты генерации контента (будущее). |
+| `cybercity-blueprints` | Переиспользуемые шаблоны org/сервисов (будущее). |
 
-## License
+## Лицензия
 
-- Code: MIT
-- Documentation: CC BY 4.0
+- Код: MIT
+- Документация: CC BY 4.0

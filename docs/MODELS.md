@@ -1,179 +1,179 @@
-# CyberCity Engine — Data Models
+# CyberCity Engine — Модели данных
 
-This document describes the data models used by the engine, moving from static
-blueprint to dynamic runtime to events.
+Этот документ описывает модели данных движка: от статического blueprint до
+динамического runtime и событий.
 
-## Topology graph
+## Топологический граф
 
-Loaded from `cybercity-data` artifacts. Immutable during a simulation.
+Загружается из артефактов `cybercity-data`. Иммутабелен во время симуляции.
 
 ### TopologyNode
 
-Represents a service in the city.
+Представляет сервис в городе.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | `str` | Kebab-case unique identifier. |
-| `org_id` | `str` | Owning organization. |
-| `name` | `str` | Human-readable name. |
-| `kind` | `str` | Service kind: web, api, db, dns, scada, etc. |
-| `exposure` | `Literal["public","intranet","ot","mgmt"]` | Network exposure level. |
-| `host` | `str` | FQDN for DNS. |
-| `network_id` | `str \| None` | Logical network placement. |
-| `bind_ip` | `str \| None` | Allocated IP address. |
-| `auth` | `str` | Authentication method. |
-| `data_classification` | `str` | Sensitivity label. |
-| `criticality` | `Literal["critical","high","medium","low"]` | Business impact. |
-| `ports` | `list[str]` | Exposed ports, e.g. `tcp/443`. |
-| `is_decoy` | `bool` | Whether this is a decoy service. |
-| `decoy_kind` | `str \| None` | Decoy fingerprint type. |
-| `software` | `dict[str, Any]` | Vendor/product/version/CVE. |
-| `os_hint` | `str \| None` | Operating system hint. |
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `id` | `str` | Уникальный kebab-case идентификатор. |
+| `org_id` | `str` | Организация-владелец. |
+| `name` | `str` | Человекочитаемое имя. |
+| `kind` | `str` | Тип сервиса: web, api, db, dns, scada и т.д. |
+| `exposure` | `Literal["public","intranet","ot","mgmt"]` | Уровень сетевой экспозиции. |
+| `host` | `str` | FQDN для DNS. |
+| `network_id` | `str \| None` | Логическое сетевое размещение. |
+| `bind_ip` | `str \| None` | Выделенный IP-адрес. |
+| `auth` | `str` | Метод аутентификации. |
+| `data_classification` | `str` | Метка чувствительности данных. |
+| `criticality` | `Literal["critical","high","medium","low"]` | Бизнес-критичность. |
+| `ports` | `list[str]` | Открытые порты, например `tcp/443`. |
+| `is_decoy` | `bool` | Является ли сервис decoy. |
+| `decoy_kind` | `str \| None` | Тип fingerprint decoy. |
+| `software` | `dict[str, Any]` | Вендор/продукт/версия/CVE. |
+| `os_hint` | `str \| None` | Подсказка об ОС. |
 
 ### TopologyEdge
 
-Represents a relationship between two services.
+Представляет отношение между двумя сервисами.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `source` | `str` | Source service id. |
-| `target` | `str` | Target service id. |
-| `kind` | `str` | Link kind: api-call, auth, db-read, db-write, etc. |
-| `protocol` | `str \| None` | e.g. `tcp/443`. |
-| `encryption` | `str \| None` | e.g. `tls`, `mtls`. |
-| `inferred` | `bool` | True if not from `links` but derived. |
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `source` | `str` | Исходный сервис. |
+| `target` | `str` | Целевой сервис. |
+| `kind` | `str` | Тип связи: api-call, auth, db-read, db-write и т.д. |
+| `protocol` | `str \| None` | Например `tcp/443`. |
+| `encryption` | `str \| None` | Например `tls`, `mtls`. |
+| `inferred` | `bool` | True, если не из `links`, а выведено. |
 
 ### TopologyGraph
 
-Container for nodes and edges.
+Контейнер узлов и рёбер.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `schema_version` | `str` | Version of the data schema. |
-| `source_version` | `str` | Version of the city artifact. |
-| `services` | `dict[str, TopologyNode]` | Service nodes. |
-| `edges` | `list[TopologyEdge]` | All edges. |
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `schema_version` | `str` | Версия схемы данных. |
+| `source_version` | `str` | Версия артефакта города. |
+| `services` | `dict[str, TopologyNode]` | Сервисы. |
+| `edges` | `list[TopologyEdge]` | Все рёбра. |
 
-## Runtime state
+## Runtime-состояние
 
-Mutable state owned by `StateManager`.
+Изменяемое состояние, владельцем которого является `StateManager`.
 
 ### ServiceState
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `service_id` | `str` | Reference to topology node. |
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `service_id` | `str` | Ссылка на topology-узел. |
 | `status` | `ServiceStatus` | up, down, compromised, maintenance. |
-| `health` | `float` | 0.0–1.0 health indicator. |
-| `compromise_vector` | `str \| None` | How the service was compromised. |
-| `last_heartbeat` | `datetime \| None` | Last real service heartbeat. |
-| `seen_by` | `list[str]` | Observers (scanners). |
-| `flags` | `dict[str, Any]` | Scenario-specific flags. |
-| `variables` | `dict[str, Any]` | Process-local variables. |
+| `health` | `float` | Индикатор здоровья 0.0–1.0. |
+| `compromise_vector` | `str \| None` | Как сервис был скомпрометирован. |
+| `last_heartbeat` | `datetime \| None` | Последний heartbeat real-сервиса. |
+| `seen_by` | `list[str]` | Наблюдатели (сканеры). |
+| `flags` | `dict[str, Any]` | Сценарий-специфичные флаги. |
+| `variables` | `dict[str, Any]` | Локальные переменные процессов. |
 
 ### PlayerState
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `player_id` | `str` | Unique player id. |
-| `name` | `str` | Display name. |
-| `org_id` | `str \| None` | Starting org assignment. |
-| `score` | `int` | Current score. |
-| `flags` | `list[str]` | Captured flags. |
-| `status` | `Literal["active","idle","banned"]` | Player status. |
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `player_id` | `str` | Уникальный id игрока. |
+| `name` | `str` | Отображаемое имя. |
+| `org_id` | `str \| None` | Назначенная стартовая организация. |
+| `score` | `int` | Текущий счёт. |
+| `flags` | `list[str]` | Захваченные флаги. |
+| `status` | `Literal["active","idle","banned"]` | Статус игрока. |
 
 ### ScenarioState
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `scenario_id` | `str` | Scenario identifier. |
-| `name` | `str` | Display name. |
-| `status` | `Literal["running","paused","stopped"]` | Lifecycle. |
-| `started_at` | `datetime` | Start time. |
-| `ended_at` | `datetime \| None` | End time. |
-| `config` | `dict[str, Any]` | Scenario parameters. |
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `scenario_id` | `str` | Идентификатор сценария. |
+| `name` | `str` | Отображаемое имя. |
+| `status` | `Literal["running","paused","stopped"]` | Жизненный цикл. |
+| `started_at` | `datetime` | Время старта. |
+| `ended_at` | `datetime \| None` | Время окончания. |
+| `config` | `dict[str, Any]` | Параметры сценария. |
 
 ### WorldState
 
-Complete snapshot of the runtime world.
+Полный снапшот runtime-мира.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `tick` | `int` | Current simulation tick. |
-| `started_at` | `datetime` | Engine start time. |
-| `services` | `dict[str, ServiceState]` | Per-service runtime state. |
-| `players` | `dict[str, PlayerState]` | Players. |
-| `active_scenario` | `ScenarioState \| None` | Running scenario. |
-| `variables` | `dict[str, Any]` | Global variables. |
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `tick` | `int` | Текущий tick симуляции. |
+| `started_at` | `datetime` | Время старта движка. |
+| `services` | `dict[str, ServiceState]` | Состояние по сервисам. |
+| `players` | `dict[str, PlayerState]` | Игроки. |
+| `active_scenario` | `ScenarioState \| None` | Запущенный сценарий. |
+| `variables` | `dict[str, Any]` | Глобальные переменные. |
 
-## Event graph
+## Событийный граф
 
 Append-only causal graph.
 
 ### EventNode
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `event_id` | `str` | UUID of the event. |
-| `parent_event_ids` | `list[str]` | Immediate causal parents. |
-| `correlation_id` | `str` | Scenario/incident grouping id. |
-| `tick` | `int` | Tick at which event was generated. |
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `event_id` | `str` | UUID события. |
+| `parent_event_ids` | `list[str]` | Непосредственные causal-родители. |
+| `correlation_id` | `str` | Группировка по сценарию/инциденту. |
+| `tick` | `int` | Tick, в котором событие сгенерировано. |
 | `timestamp` | `datetime` | Wall-clock timestamp. |
 | `source_type` | `Literal[...]` | engine, service, scenario, player, system, background. |
-| `source_id` | `str` | Id of the source. |
-| `event_type` | `EventType` | Type of event. |
-| `target_id` | `str \| None` | Target topology node id. |
-| `payload` | `dict[str, Any]` | Event-specific data. |
-| `status` | `Literal["pending","processed","failed","suppressed"]` | Processing status. |
+| `source_id` | `str` | Id источника. |
+| `event_type` | `EventType` | Тип события. |
+| `target_id` | `str \| None` | Целевой topology-узел. |
+| `payload` | `dict[str, Any]` | Событие-специфичные данные. |
+| `status` | `Literal["pending","processed","failed","suppressed"]` | Статус обработки. |
 
 ### EventType
 
-| Value | Meaning |
-|-------|---------|
-| `HEARTBEAT` | Real service liveness ping. |
-| `SCAN` | Network/service scan. |
-| `ATTACK` | Offensive action against a service. |
-| `COMPROMISE` | Service confirmed compromised. |
-| `RESTORE` | Restoration action. |
-| `STATE_CHANGE` | Runtime state changed. |
-| `COMMAND` | Player/instructor command. |
-| `SCENARIO_START` | Scenario begins. |
-| `SCENARIO_STOP` | Scenario ends. |
-| `FLAG_CAPTURED` | Player achieved objective. |
-| `BACKGROUND_EFFECT` | Emitted by background processes. |
-| `PROPAGATION` | Event propagated through topology. |
+| Значение | Значение |
+|----------|----------|
+| `HEARTBEAT` | Liveness-пинг real-сервиса. |
+| `SCAN` | Сканирование сети/сервиса. |
+| `ATTACK` | Атака на сервис. |
+| `COMPROMISE` | Подтверждённая компрометация сервиса. |
+| `RESTORE` | Восстановление. |
+| `STATE_CHANGE` | Изменение runtime-состояния. |
+| `COMMAND` | Команда игрока/инструктора. |
+| `SCENARIO_START` | Сценарий начался. |
+| `SCENARIO_STOP` | Сценарий закончился. |
+| `FLAG_CAPTURED` | Игрок достиг цели. |
+| `BACKGROUND_EFFECT` | Событие от background-процесса. |
+| `PROPAGATION` | Событие, распространённое по топологии. |
 
 ### EventEdge
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `source_event_id` | `str` | Parent event. |
-| `target_event_id` | `str` | Child event. |
-| `kind` | `Literal["caused_by","propagated_to","triggered_rule","response_to"]` | Relationship. |
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `source_event_id` | `str` | Родительское событие. |
+| `target_event_id` | `str` | Дочернее событие. |
+| `kind` | `Literal["caused_by","propagated_to","triggered_rule","response_to"]` | Отношение. |
 
-## Configuration
+## Конфигурация
 
 ### EngineConfig
 
-| Field | Default | Description |
-|-------|---------|-------------|
-| `app_name` | `cybercity-engine` | Application name. |
-| `debug` | `False` | Debug mode. |
-| `tick_ms` | `1000` | Tick interval. |
-| `engine_zip_url` | local MinIO | Source of topology artifact. |
-| `kafka_bootstrap_servers` | `localhost:9092` | Redpanda/Kafka address. |
-| `database_url` | local PostgreSQL | Snapshot/audit DB. |
-| `snapshot_interval_ticks` | `10` | Snapshot frequency. |
-| `host` / `port` | `0.0.0.0:8000` | API bind. |
+| Поле | По умолчанию | Описание |
+|------|--------------|----------|
+| `app_name` | `cybercity-engine` | Имя приложения. |
+| `debug` | `False` | Режим отладки. |
+| `tick_ms` | `1000` | Интервал tick. |
+| `engine_zip_url` | local MinIO | Источник topology-артефакта. |
+| `kafka_bootstrap_servers` | `localhost:9092` | Адрес Redpanda/Kafka. |
+| `database_url` | local PostgreSQL | БД снапшотов/audit. |
+| `snapshot_interval_ticks` | `10` | Частота снапшотов. |
+| `host` / `port` | `0.0.0.0:8000` | Привязка API. |
 
-## Serialization
+## Сериализация
 
-- Models use Pydantic v2.
-- API returns JSON via `model_dump(mode="json")`.
-- PostgreSQL stores snapshots and events as JSONB.
-- Redpanda messages are JSON by default; Avro may be added later.
+- Модели используют Pydantic v2.
+- API возвращает JSON через `model_dump(mode="json")`.
+- PostgreSQL хранит снапшоты и события как JSONB.
+- Сообщения в Redpanda по умолчанию JSON; позже может быть Avro.
 
-## Related
+## Связанные документы
 
-- `docs/ARCHITECTURE.md` — how models fit together.
-- `docs/DATA_FLOW.md` — how events move through models.
+- [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) — как модели связаны между собой.
+- [`docs/DATA_FLOW.md`](DATA_FLOW.md) — как события движутся через модели.

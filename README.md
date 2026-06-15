@@ -4,61 +4,62 @@
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/code-MIT-green)](LICENSE)
 
-Event-driven runtime engine for the CyberCity digital twin.
+Событийный runtime-движок для цифрового двойника CyberCity.
 
-This is the **Python reference implementation** of the engine. It is intentionally
-developed in Python for rapid iteration and concept validation, with a planned
-future port to Go for production-grade performance.
+Это **Python reference-реализация** движка. Она намеренно сделана на Python для
+быстрой итерации и валидации концепции, с планируемым в будущем переносом на
+Go для production-grade производительности.
 
-## Architecture
+## Архитектура
 
-The engine is built around **two graphs**:
+Движок построен вокруг **двух графов**:
 
-1. **Topology Graph** — static blueprint of the city loaded from `cybercity-data`:
-   - nodes: services (`bank-web`, `hospital-db`, ...)
-   - edges: declared links (`api-call`, `auth`, `db-read`, `backup-of`, ...)
-   - also: inferred edges (same network, same org, exposure chain)
+1. **Топологический граф** — статический blueprint города, загружаемый из
+   `cybercity-data`:
+   - узлы: сервисы (`bank-web`, `hospital-db`, ...)
+   - рёбра: декларированные связи (`api-call`, `auth`, `db-read`, `backup-of`, ...)
+   - также: inferred-рёбра (same network, same org, exposure chain)
 
-2. **Event Graph** — dynamic causal graph of everything that happens:
-   - nodes: events (scan, compromise, state change, player action)
-   - edges: `caused_by`, `propagated_to`, `triggered_rule`
-   - enables attack provenance, replay, explainability
+2. **Событийный граф** — динамический causal-граф всего, что происходит:
+   - узлы: события (scan, compromise, state change, player action)
+   - рёбра: `caused_by`, `propagated_to`, `triggered_rule`
+   - даёт attack provenance, replay, explainability
 
-Events flow through **Redpanda/Kafka** and are processed by the engine tick loop.
-Runtime state is snapshotted to **PostgreSQL**.
+События идут через **Redpanda/Kafka** и обрабатываются tick-циклом движка.
+Runtime-состояние сохраняется в **PostgreSQL**.
 
-## Documentation
+## Документация
 
-| Document | Purpose |
-|----------|---------|
-| [`docs/VISION.md`](docs/VISION.md) | Why the project exists and what it wants to be. |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | High-level architecture and system context. |
-| [`docs/DATA_FLOW.md`](docs/DATA_FLOW.md) | How events move through the system. |
-| [`docs/MODELS.md`](docs/MODELS.md) | Data model reference. |
-| [`docs/API.md`](docs/API.md) | HTTP and WebSocket protocol. |
-| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Local dev, home lab, production sketch. |
-| [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) | How to work on the engine. |
+| Документ | Назначение |
+|----------|-----------|
+| [`docs/VISION.md`](docs/VISION.md) | Зачем существует проект и к чему стремится. |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Высокоуровневая архитектура и системный контекст. |
+| [`docs/DATA_FLOW.md`](docs/DATA_FLOW.md) | Как события движутся через систему. |
+| [`docs/MODELS.md`](docs/MODELS.md) | Справочник по моделям данных. |
+| [`docs/API.md`](docs/API.md) | Протокол HTTP и WebSocket. |
+| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Локальная разработка, home lab, production-набросок. |
+| [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) | Как работать над движком. |
 | [`docs/adr/`](docs/adr/) | Architecture decision records. |
 
-## Quick start (local Docker Compose)
+## Быстрый старт (local Docker Compose)
 
 ```bash
-# 1. Start dependencies
+# 1. Запуск зависимостей
 uv run docker compose up -d postgres redpanda minio
 
-# 2. Build or copy a city artifact from cybercity-data, then run engine
+# 2. Сборка или копирование артефакта города из cybercity-data, затем запуск движка
 uv run cybercity-engine --engine-zip /path/to/engine.zip
 ```
 
-See [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) for the full workflow.
+Подробнее — в [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
 
-## Status
+## Статус
 
-Core architecture, models, bootstrap, engine loop, API skeleton, and
-documentation are in place. Next: PostgreSQL persistence, Redpanda integration,
-background processes, and the first scenario.
+Базовая архитектура, модели, bootstrap, engine-loop, API-скелет и документация
+готовы. Дальше: persistence в PostgreSQL, интеграция с Redpanda,
+background-процессы и первый сценарий.
 
-## License
+## Лицензия
 
-- Code: [MIT](LICENSE)
-- Documentation: [CC BY 4.0](LICENSE-DOCS)
+- Код: [MIT](LICENSE)
+- Документация: [CC BY 4.0](LICENSE-DOCS)

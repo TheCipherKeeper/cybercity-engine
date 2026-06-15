@@ -1,4 +1,4 @@
-# ADR-0001: Two-graph runtime architecture
+# ADR-0001: Архитектура с двумя графами
 
 ## Status
 
@@ -6,59 +6,64 @@ Accepted
 
 ## Context
 
-The CyberCity engine must model a city-wide IT/OT infrastructure and run
-cybersecurity scenarios on top of it. Two distinct responsibilities emerged:
+Движок CyberCity должен моделировать городскую ИТ/ОТ-инфраструктуру и
+запускать на ней сценарии кибербезопасности. В процессе проектирования
+выплыли две разные ответственности:
 
-1. **Static deployment blueprint** — what exists, how it is connected, how it
-   should be deployed.
-2. **Dynamic causal history** — what happened, why it happened, how influence
-   propagated.
+1. **Статический blueprint развёртывания** — что существует, как связано, как
+   должно развёртываться.
+2. **Динамическая causal история** — что произошло, почему произошло, как
+   влияние распространялось.
 
-A single data structure for both concerns became confusing: the topology graph
-is mostly immutable, while the event graph is append-only and temporal.
+Одинаковая структура данных для обеих задач получилась запутанной:
+топологический граф почти неизменяем, а событийный граф — append-only и
+временной.
 
 ## Decision
 
-Use **two separate but linked graphs** at runtime:
+Использовать **два отдельных, но связанных графа** в runtime:
 
-- **Topology Graph** — loaded from `cybercity-data` artifacts (`engine.zip`).
-  Nodes are services. Edges are declared links plus inferred adjacency (same
-  network, same org, exposure reachability). This graph answers "what is
-  connected to what".
+- **Топологический граф** — загружается из артефактов `cybercity-data`.
+  Узлы — сервисы. Рёбра — декларированные связи плюс inferred-смежность
+  (одна сеть, одна org, exposure chain). Этот граф отвечает на вопрос
+  «что с чем связано?».
 
-- **Event Graph** — built at runtime. Nodes are events. Edges are causal or
-  propagation relationships (`caused_by`, `propagated_to`, `triggered_rule`).
-  This graph answers "what happened and why".
+- **Событийный граф** — строится в runtime. Узлы — события. Рёбра —
+  causal или propagation-отношения (`caused_by`, `propagated_to`,
+  `triggered_rule`). Этот граф отвечает на вопрос «что произошло и
+  почему?».
 
-Events reference topology nodes via `target_id`. Topology nodes influence event
-routing through the `EventRouter`.
+События ссылаются на узлы топологии через `target_id`. Узлы топологии
+влияют на routing событий через `EventRouter`.
 
 ## Consequences
 
 ### Positive
 
-- Clear separation of static and dynamic concerns.
-- Topology graph can be reloaded without losing runtime provenance.
-- Attack paths and incident timelines become first-class data.
-- Replay and audit are straightforward.
+- Чёткое разделение статики и динамики.
+- Топологический граф можно перезагрузить без потери runtime-provenance.
+- Attack paths и incident timelines становятся first-class данными.
+- Replay и audit становятся прямыми.
 
 ### Negative
 
-- More complex state to keep consistent.
-- Event graph can grow quickly; needs retention/summarization strategy.
-- Need to maintain mapping between service identity in topology and service
-  identity in events.
+- Больше состояния, за которым нужно следить.
+- Событийный граф может быстро расти; нужна стратегия retention/
+  summarization.
+- Необходимо поддерживать mapping между identity сервиса в топологии и
+  identity в событиях.
 
 ## Alternatives considered
 
-- **Single graph with mutable attributes**: rejected because it mixes
-  blueprint and history, making provenance hard to reconstruct.
-- **Event sourcing only with no topology**: rejected because deployment and
-  routing need a stable structural model.
+- **Один граф с mutable атрибутами**: отклонено, потому что смешивает
+  blueprint и историю, и provenance становится сложно восстановить.
+- **Только event sourcing без топологии**: отклонено, потому что
+  развёртывание и routing нуждаются в стабильной структурной модели.
 
 ## Related
 
-- `cybercity-data` provides the canonical topology.
-- `EventRouter` consumes topology edges to decide propagation.
-- `docs/ARCHITECTURE.md` — high-level system architecture.
-- `docs/MODELS.md` — detailed data models.
+- `cybercity-data` предоставляет каноническую топологию.
+- `EventRouter` потребляет рёбра топологии для решения propagation.
+- [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md) — высокоуровневая системная
+  архитектура.
+- [`docs/MODELS.md`](../MODELS.md) — детальные модели данных.

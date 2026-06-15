@@ -6,68 +6,69 @@ Accepted
 
 ## Context
 
-The engine needs to be built quickly to validate architecture, data models,
-propagation rules, and UX. At the same time, the final platform may require
-the concurrency and performance of a systems language.
+Движок нужно построить быстро, чтобы валидировать архитектуру, модели данных,
+правила propagation и UX. В то же время финальная платформа может потребовать
+производительности и concurrency systems-языка.
 
 ## Decision
 
-Implement the **Python reference version first**.
+Сначала реализовать **Python reference-версию**.
 
-Goals of the Python version:
+Цели Python-версии:
 
-1. Validate the two-graph architecture.
-2. Establish event schemas and propagation rules.
-3. Build tests, ADRs, and documentation.
-4. Provide a public demo and learning platform.
+1. Валидировать архитектуру с двумя графами.
+2. Зафиксировать event-схемы и propagation-правила.
+3. Построить тесты, ADR и документацию.
+4. Предоставить публичную демонстрацию и обучающую платформу.
 
-When the architecture is stable and the demo is working, a **Go port** may be
-developed for production performance. The Python version remains the reference
-for semantics and tests.
+Когда архитектура стабилизируется и демо работает, может быть разработан
+**Go port** для production performance. Python-версия остаётся reference для
+семантики и тестов.
 
-## Rationale
+## Обоснование
 
-- Python ecosystem is excellent for rapid prototyping: FastAPI, Pydantic,
+- Python-экосистема отлична для быстрого прототипирования: FastAPI, Pydantic,
   NetworkX, pytest, asyncio.
-- Cybersecurity domain often uses Python for tools and automation.
-- Tests and ADRs written in Python transfer directly to Go design.
-- Performance is not the bottleneck at the home-lab / demo stage.
+- Домен cybersecurity часто использует Python для инструментов и автоматизации.
+- Тесты и ADR, написанные на Python, напрямую переносятся в Go-дизайн.
+- Производительность не является bottleneck на этапе home lab / demo.
 
-## When to port to Go
+## Когда портировать на Go
 
-Consider a Go implementation when:
+Рассмотреть Go-реализацию, когда:
 
-- Single Python process cannot keep up with event throughput.
-- Horizontal scaling becomes necessary.
-- The public demo needs lower latency or higher player count.
-- The architecture is proven stable for at least one full scenario.
+- Один Python-процесс не справляется с throughput событий.
+- Необходима горизонтальная масштабируемость.
+- Публичной демонстрации нужна меньшая latency или большее число игроков.
+- Архитектура доказана стабильной хотя бы для одного полного сценария.
 
-## Boundaries
+## Границы
 
-The Python engine must keep the core logic separate from framework details so
-that a future Go port can reuse the same design:
+Python-движок должен держать core logic отдельно от framework-деталей, чтобы
+будущий Go port мог переиспользовать тот же дизайн:
 
-- Models are pure data.
-- Handlers are pure functions over state and events.
-- Router rules are pure functions.
-- Event store is an interface.
-- Persistence is an interface.
+- Модели — чистые данные.
+- Handlers — чистые функции над состоянием и событиями.
+- Router rules — чистые функции.
+- Event store — интерфейс.
+- Persistence — интерфейс.
 
 ## Consequences
 
 ### Positive
 
-- Fast iteration and clear code.
-- Strong test coverage before committing to Go.
-- Lower barrier for contributors and reviewers.
+- Быстрая итерация и ясный код.
+- Сильное покрытие тестами перед коммитом в Go.
+- Низкий порог для контрибьюторов и ревьюверов.
 
 ### Negative
 
-- Python's GIL limits CPU parallelism.
-- Higher memory use than Go.
-- Some production features (true zero-allocation hot path) may require Go.
+- GIL Python ограничивает CPU parallelism.
+- Большее потребление памяти, чем у Go.
+- Некоторые production-фичи (true zero-allocation hot path) могут потребовать
+  Go.
 
 ## Related
 
-- `README.md` — status and language choice.
-- ADR-0002 — event-driven runtime.
+- [`README.md`](../../README.md) — статус и выбор языка.
+- ADR-0002 — событийный runtime.

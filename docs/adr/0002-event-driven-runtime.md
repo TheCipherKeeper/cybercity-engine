@@ -1,4 +1,4 @@
-# ADR-0002: Event-driven runtime with tick loop
+# ADR-0002: Событийный runtime с tick-циклом
 
 ## Status
 
@@ -6,44 +6,46 @@ Accepted
 
 ## Context
 
-The engine must maintain a consistent runtime state while serving multiple
-concurrent sources: player commands, scenario events, real service heartbeats,
-simulated service responses, and scheduled background processes.
+Движок должен поддерживать консистентное runtime-состояние при множестве
+конкурентных источников: команды игроков, события сценариев, heartbeats
+реальных сервисов, ответы simulated-сервисов и запланированные
+background-процессы.
 
-A request-response model would force every component to know every other
-component, creating tight coupling and making provenance hard. An event-driven
-model decouples producers from consumers and gives every state change a
-recorded cause.
+Модель request-response заставила бы каждый компонент знать о каждом другом,
+создавая тесную связанность и усложняя provenance. Событийная модель
+развязывает producers от consumers и даёт каждому изменению состояния
+записанную причину.
 
 ## Decision
 
-The engine uses an **event-driven runtime** with a single tick loop:
+Движок использует **событийный runtime** с единым tick-циклом:
 
-1. External inputs are converted to events and placed in a queue or event bus.
-2. The tick loop drains the queue, processes events, updates state, generates
-   child events, and propagates them through the topology graph.
-3. Background processes run once per tick and may emit events.
-4. State changes are broadcast to subscribers (UI, scenario manager, audit log).
+1. Внешние входы преобразуются в события и помещаются в очередь или event bus.
+2. Tick-цикл опустошает очередь, обрабатывает события, обновляет состояние,
+   генерирует дочерние события и распространяет их через топологический граф.
+3. Background-процессы запускаются каждый tick и могут эмитить события.
+4. Изменения состояния broadcast'ятся подписчикам (UI, scenario manager,
+   audit log).
 
-Only the engine's tick loop mutates `WorldState`.
+Только tick-цикл движка мутирует `WorldState`.
 
 ## Consequences
 
 ### Positive
 
-- Clear causality: every mutation is preceded by an event.
-- Loose coupling between UI, scenarios, and real services.
-- Easy to replay, test, and debug.
-- Natural fit for Kafka/Redpanda event streaming.
-- Deterministic with fixed seed and fixed event order.
+- Ясная причинность: каждая мутация предшествуется событием.
+- Слабая связанность между UI, сценариями и реальными сервисами.
+- Простота replay, тестирования и отладки.
+- Естественное соответствие Kafka/Redpanda event streaming.
+- Детерминированность при фиксированном seed и фиксированном порядке событий.
 
 ### Negative
 
-- Higher latency than direct mutation (acceptable for training use case).
-- Need careful ordering to avoid race conditions.
-- Event graph can grow large; needs retention strategy.
+- Большая latency, чем прямая мутация (приемлемо для training use case).
+- Нужно внимательно следить за порядком, чтобы избежать race conditions.
+- Событийный граф может разрастаться; нужна retention-стратегия.
 
-## Event lifecycle
+## Жизненный цикл события
 
 ```text
 Producer → queue/bus → Engine._process_event() → handler → StateManager
@@ -55,39 +57,39 @@ Producer → queue/bus → Engine._process_event() → handler → StateManager
                                        next tick
 ```
 
-## Event ordering guarantees
+## Гарантии упорядочивания
 
-Within a single tick:
+Внутри одного tick:
 
-1. All queued commands are drained.
-2. Events are processed in FIFO order from the pending list.
-3. A child event generated during processing is appended to the pending list
-   and processed in the same tick if possible.
+1. Все queued-команды опустошаются.
+2. События обрабатываются из pending-списка в порядке FIFO.
+3. Дочернее событие, сгенерированное во время обработки, добавляется в
+   pending-список и обрабатывается в том же tick, если возможно.
 
-Across ticks, causality is preserved because child events carry
-`parent_event_ids` and `correlation_id`.
+Между ticks причинность сохраняется, потому что дочерние события несут
+`parent_event_ids` и `correlation_id`.
 
-## Background processes
+## Background-процессы
 
-Background processes are functions that read `WorldState` and optionally emit
-events. They run after queued events are processed. Examples:
+Background-процессы — это функции, которые читают `WorldState` и опционально
+эмитят события. Они запускаются после обработки queued-событий. Примеры:
 
-- `DegradationProcess` — reduces service level while a service is degraded.
-- `RecoveryProcess` — advances recovery progress.
-- `BackupPowerFuelProcess` — consumes fuel while backup power is active.
+- `DegradationProcess` — снижает service level пока сервис degraded.
+- `RecoveryProcess` — продвигает recovery progress.
+- `BackupPowerFuelProcess` — расходует топливо пока работает backup power.
 
-They are **not** nodes in the topology graph.
+Они **не являются** узлами топологического графа.
 
 ## Alternatives considered
 
-- **Actor model (one actor per service)**: more complex for our scale, harder
-  to debug causality.
-- **Pure event sourcing with no tick**: makes background processes and
-  scheduling awkward.
-- **Request-response with shared mutable state**: rejected due to tight
-  coupling and poor observability.
+- **Actor model (по одному актору на сервис)**: сложнее для нашего масштаба,
+  сложнее отлаживать causality.
+- **Чистый event sourcing без tick**: делает background-процессы и scheduling
+  неуклюжими.
+- **Request-response с shared mutable state**: отклонено из-за тесной связки и
+  плохой observability.
 
 ## Related
 
-- ADR-0001: two-graph architecture.
-- `docs/ARCHITECTURE.md` system context diagram.
+- ADR-0001: архитектура с двумя графами.
+- [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md) — системный контекст.

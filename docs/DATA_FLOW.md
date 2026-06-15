@@ -1,151 +1,151 @@
-# CyberCity Engine — Data Flow
+# CyberCity Engine — Потоки данных
 
-This document describes how information moves through the CyberCity engine. It
-is organized by use case, from high-level player action down to storage and
-broadcast.
+Этот документ описывает, как информация движется через CyberCity engine.
+Организовано по сценариям использования — от high-level действия игрока до
+хранения и broadcast.
 
-## 1. Player scans a service
+## 1. Игрок сканирует сервис
 
 ```text
-Player UI
+UI игрока
     │ POST /commands { action: "SCAN", target: "bank-web", player_id: "p1" }
     ▼
 FastAPI /commands endpoint
-    │ converts command to EventNode(COMMAND)
+    │ преобразует команду в EventNode(COMMAND)
     ▼
 Engine.submit_command()
-    │ queues event
+    │ ставит событие в очередь
     ▼
 Tick loop
-    │ drains command queue
+    │ опустошает очередь команд
     ▼
 Engine._process_event(COMMAND)
-    │ handler converts COMMAND → SCAN event
+    │ handler превращает COMMAND → SCAN событие
     ▼
 Engine._process_event(SCAN)
-    │ handler marks bank-web seen_by p1
-    │ asks EventRouter to propagate
+    │ handler отмечает bank-web.seen_by p1
+    │ просит EventRouter распространить
     ▼
 EventRouter
-    │ finds log-sink edge bank-web → bank-log
+    │ находит log-sink ребро bank-web → bank-log
     │ noise_level 0.9 >= 0.5
-    │ creates child PROPAGATION event
+    │ создаёт дочернее PROPAGATION событие
     ▼
 Engine._process_event(PROPAGATION)
-    │ no handler yet; status = suppressed
+    │ handler пока нет; status = suppressed
     ▼
 EventGraph
-    │ records SCAN, PROPAGATION, and propagated_to edge
+    │ записывает SCAN, PROPAGATION и propagated_to ребро
     ▼
 UI broadcast
-    │ STATE_UPDATE for bank-web.seen_by
-    │ EVENT_LOG for scan and alert
+    │ STATE_UPDATE для bank-web.seen_by
+    │ EVENT_LOG для scan и alert
 ```
 
-## 2. Player attacks and compromises a service
+## 2. Игрок атакует и компрометирует сервис
 
 ```text
-Player UI
+UI игрока
     │ POST /commands { action: "ATTACK", target: "bank-web", vector: "sqli" }
     ▼
 Engine
-    │ converts to ATTACK event with success: true
+    │ преобразует в ATTACK событие с success: true
     ▼
 Engine._process_event(ATTACK)
-    │ handler calls StateManager.set_service_status(COMPROMISED)
+    │ handler вызывает StateManager.set_service_status(COMPROMISED)
     ▼
 StateManager
-    │ changes bank-web.status: up → compromised
-    │ emits STATE_CHANGE event
+    │ меняет bank-web.status: up → compromised
+    │ эмитит STATE_CHANGE событие
     ▼
 Engine._process_event(STATE_CHANGE)
-    │ links to parent ATTACK
-    │ asks EventRouter to propagate
+    │ связывает с родительским ATTACK
+    │ просит EventRouter распространить
     ▼
 EventRouter._state_change_propagation_rule
-    │ finds db-read edge bank-web → bank-db
+    │ находит db-read ребро bank-web → bank-db
     │ new_status == compromised
-    │ emits BACKGROUND_EFFECT dependency_impact
+    │ эмитит BACKGROUND_EFFECT dependency_impact
     ▼
 Engine._process_event(BACKGROUND_EFFECT)
-    │ future handler may reduce bank-db health
+    │ будущий handler может снизить health bank-db
     ▼
 UI broadcast
-    │ bank-web status change
-    │ bank-db impact event
+    │ изменение статуса bank-web
+    │ impact-событие bank-db
 ```
 
-## 3. Real service heartbeat
+## 3. Heartbeat реального сервиса
 
 ```text
-cybercity-agent on bank-web VM
-    │ sends HEARTBEAT event every 10s
+cybercity-agent на VM bank-web
+    │ шлёт HEARTBEAT событие каждые 10s
     ▼
-Redpanda city.service.heartbeat topic
+Redpanda topic city.service.heartbeat
     ▼
-Engine consumer
-    │ receives HEARTBEAT
+Consumer движка
+    │ получает HEARTBEAT
     ▼
 Engine._process_event(HEARTBEAT)
-    │ updates bank-web.last_heartbeat
+    │ обновляет bank-web.last_heartbeat
     ▼
-Health checker (background process)
-    │ every N ticks checks last_heartbeat
-    │ if missing for threshold → emit STATE_CHANGE down
+Health checker (background-процесс)
+    │ каждые N тиков проверяет last_heartbeat
+    │ если пропущен порог → эмитит STATE_CHANGE down
 ```
 
-## 4. Scenario manager starts a scenario
+## 4. Scenario manager запускает сценарий
 
 ```text
 Scenario Manager
-    │ emits SCENARIO_START event
+    │ эмитит SCENARIO_START событие
     ▼
 Engine._process_event(SCENARIO_START)
-    │ sets active_scenario in WorldState
-    │ emits initial incident event(s)
+    │ устанавливает active_scenario в WorldState
+    │ эмитит начальные incident-события
     ▼
 Engine._process_event(RESOURCE_IMPACT / STATE_CHANGE)
-    │ cascades through topology
+    │ каскадирует по топологии
     ▼
-Scenario Manager listens to city.events
-    │ updates scoring, checks win/lose conditions
-    │ emits FLAG_CAPTURED if player reaches objective
+Scenario Manager слушает city.events
+    │ обновляет scoring, проверяет win/lose условия
+    │ эмитит FLAG_CAPTURED, если игрок достиг цели
 ```
 
-## 5. Snapshot and recovery
+## 5. Снапшот и восстановление
 
 ```text
 Tick loop
-    │ every snapshot_interval_ticks
+    │ каждые snapshot_interval_ticks
     ▼
-StateManager serializes WorldState
+StateManager сериализует WorldState
     ▼
-PostgreSQL snapshots table
+Таблица PostgreSQL snapshots
     │ INSERT (tick, state_json)
     ▼
-On engine restart
-    │ load latest snapshot
-    │ resume from tick
-    │ replay recent events from Redpanda if needed
+При перезапуске движка
+    │ загрузить последний снапшот
+    │ возобновить с нужного tick
+    │ при необходимости replay недавних событий из Redpanda
 ```
 
-## 6. Audit and replay
+## 6. Аудит и replay
 
 ```text
 city.audit topic
-    │ receives every processed event
+    │ получает каждое обработанное событие
     ▼
-PostgreSQL events table
+Таблица PostgreSQL events
     │ INSERT (tick, source, target, type, payload, correlation_id)
     ▼
-Replay tool (future)
-    │ reads events in tick order
-    │ reconstructs WorldState deterministically
+Replay tool (будущее)
+    │ читает события в порядке tick
+    │ детерминированно восстанавливает WorldState
 ```
 
-## Event schemas
+## Схема события
 
-See `MODELS.md` for full schema. Minimal example:
+Полная схема — в `MODELS.md`. Минимальный пример:
 
 ```json
 {
@@ -163,24 +163,23 @@ See `MODELS.md` for full schema. Minimal example:
 }
 ```
 
-## Message ordering
+## Упорядочивание сообщений
 
-- Commands from a single player are processed in submission order.
-- Events within one tick are processed FIFO.
-- Child events generated during a tick are appended to the pending list and
-  processed before the next tick begins.
-- Background processes run after queued events.
+- Команды от одного игрока обрабатываются в порядке отправки.
+- События внутри одного tick обрабатываются FIFO.
+- Дочерние события, сгенерированные во время tick, добавляются в pending-список
+  и обрабатываются до начала следующего tick.
+- Background-процессы запускаются после queued-событий.
 
-## Durability
+## Долговечность
 
-- Events are written to `city.events` and `city.audit` as soon as they are
-  processed.
-- Snapshots are written periodically.
-- In-memory event graph keeps only a recent window; full history is in
+- События пишутся в `city.events` и `city.audit` сразу после обработки.
+- Снапшоты сохраняются периодически.
+- In-memory event graph хранит только недавнее окно; полная история — в
   PostgreSQL.
 
-## Related
+## Связанные документы
 
-- `docs/ARCHITECTURE.md` — high-level architecture.
-- `docs/MODELS.md` — data models.
-- `docs/API.md` — HTTP/WebSocket protocol.
+- [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) — высокоуровневая архитектура.
+- [`docs/MODELS.md`](MODELS.md) — модели данных.
+- [`docs/API.md`](API.md) — HTTP/WebSocket протокол.

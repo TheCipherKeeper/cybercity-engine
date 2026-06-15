@@ -1,62 +1,53 @@
-# CyberCity Engine — Deployment
+# CyberCity Engine — Развёртывание
 
-This document describes how to deploy the CyberCity engine and its
-dependencies. It covers local development, home lab, and sketches production
-considerations.
+Этот документ описывает, как развёртывать движок CyberCity и его
+зависимости. Покрывает локальную разработку, home lab и набросок production.
 
-## Local development
+## Локальная разработка
 
-### Requirements
+### Требования
 
 - Python 3.12+
 - Docker / Docker Compose
 - `uv`
 
-### 1. Start dependencies
+### 1. Запуск зависимостей
 
 ```bash
 docker compose up -d postgres redpanda minio
 ```
 
-This starts:
+Запускает:
 
-- PostgreSQL on `localhost:5432`
-- Redpanda on `localhost:9092`
-- MinIO on `localhost:9000`
+- PostgreSQL на `localhost:5432`
+- Redpanda на `localhost:9092`
+- MinIO на `localhost:9000`
 
-### 2. Sync Python environment
+### 2. Синхронизация Python-окружения
 
 ```bash
 uv sync
 ```
 
-### 3. Build or download a city artifact
+### 3. Сборка или загрузка артефакта города
 
-From `cybercity-data`:
+Из `cybercity-data`:
 
 ```bash
 cd ../cybercity-data
 uv run cybercity-data build . --clean --seed 42
 ```
 
-Copy `build/engine.zip` to the engine directory or make it available via MinIO.
+Скопируйте `build/engine.zip` в директорию движка или сделайте доступным через
+MinIO.
 
-### 4. Run the engine
+### 4. Запуск движка
 
 ```bash
 uv run cybercity-engine --engine-zip engine.zip
 ```
 
-Or with hot reload for development:
-
-```bash
-uv run uvicorn cybercity_engine.api:create_app --reload
-```
-
-Note: `create_app` requires an engine instance, so for reload use a small
-wrapper module. This will be documented later.
-
-### 5. Verify
+### 5. Проверка
 
 ```bash
 curl http://localhost:8000/health
@@ -65,20 +56,20 @@ curl http://localhost:8000/topology
 
 ## Home lab
 
-### Target hardware
+### Целевое железо
 
-| Profile | CPU | RAM | Storage | Services |
-|---------|-----|-----|---------|----------|
-| Entry | 8c/16t | 32 GB | 1 TB NVMe | Mostly simulated, 0–2 real VMs |
-| Comfort | 16c/32t | 64 GB | 2 TB NVMe | Mixed, ~10 real VMs |
-| Sweet spot | 24c/48t | 128 GB | 4 TB NVMe | Full hybrid, ~30 real VMs |
+| Профиль | CPU | RAM | Storage | Сервисы |
+|---------|-----|-----|---------|---------|
+| Entry | 8c/16t | 32 GB | 1 TB NVMe | В основном simulated, 0–2 real VM |
+| Comfort | 16c/32t | 64 GB | 2 TB NVMe | Смешанный, ~10 real VM |
+| Sweet spot | 24c/48t | 128 GB | 4 TB NVMe | Full hybrid, ~30 real VM |
 
-### Layout
+### Схема
 
 ```text
 Proxmox VE
-├── k8s-cp-01,02,03          (K8s control plane)
-├── k8s-worker-01,02,03      (engine, UI, simulated services)
+├── k8s-cp-01,02,03          (control plane K8s)
+├── k8s-worker-01,02,03      (движок, UI, simulated-сервисы)
 ├── db-01,02                   (PostgreSQL HA)
 ├── redpanda-01,02,03          (messaging)
 ├── router-01                  (VyOS/pfSense)
@@ -86,71 +77,71 @@ Proxmox VE
 ├── hospital-pacs-01           (real VM)
 ├── windows-ad-01              (real VM)
 ├── kali-workstation-01        (player VM)
-└── mon-01                     (monitoring)
+└── mon-01                     (мониторинг)
 ```
 
-### K8s
+### Kubernetes
 
-Use Talos Linux or kubeadm on Ubuntu. Deploy engine, UI, simulated services,
-Redpanda, PostgreSQL, and monitoring via Helm/Kustomize.
+Используйте Talos Linux или kubeadm на Ubuntu. Деплой движка, UI,
+simulated-сервисов, Redpanda, PostgreSQL и мониторинга через Helm/Kustomize.
 
-### Networking
+### Сеть
 
 - Management network: `192.168.100.0/24`
-- City networks: `10.0.0.0/8` allocated per org by `cybercity-data`
-- Player VPN/VDI: separate segment
-- Use Cilium + Multus for pod network in city segments.
+- City networks: `10.0.0.0/8`, выделенные per org `cybercity-data`
+- Player VPN/VDI: отдельный сегмент
+- Cilium + Multus для pod-сети в city-сегментах
 
-### Public access
+### Публичный доступ
 
-Use Cloudflare Tunnel or similar to expose UI read-only view without opening
-home router ports.
+Используйте Cloudflare Tunnel или аналог, чтобы открыть read-only UI без
+проброса портов домашнего роутера.
 
-## Production sketch
+## Production-набросок
 
-| Component | Suggested |
-|-----------|-----------|
-| Orchestration | Managed Kubernetes (EKS/GKE/AKS) |
-| Database | Managed PostgreSQL or CloudNativePG |
-| Messaging | Redpanda Cloud or self-hosted cluster |
+| Компонент | Рекомендация |
+|-----------|--------------|
+| Оркестрация | Managed Kubernetes (EKS/GKE/AKS) |
+| БД | Managed PostgreSQL или CloudNativePG |
+| Messaging | Redpanda Cloud или self-hosted cluster |
 | Real VMs | Proxmox / VMware / cloud bare metal |
-| Networking | Cilium cluster mesh, dedicated firewalls |
-| Observability | Prometheus/Grafana/Loki + custom dashboards |
-| Secrets | Vault or cloud KMS |
+| Сеть | Cilium cluster mesh, выделенные firewall |
+| Observability | Prometheus/Grafana/Loki + кастомные дашборды |
+| Secrets | Vault или cloud KMS |
 | CI/CD | ArgoCD, GitHub Actions |
-| Artifacts | S3/MinIO + signed releases |
+| Артефакты | S3/MinIO + signed releases |
 
-## Environments
+## Окружения
 
-| Env | Purpose | Trigger |
-|-----|---------|---------|
-| `dev` | Experiments | every push to main |
-| `staging` | Pre-release validation | tag `v*-rc*` |
-| `prod` | Live exercises | manual promotion |
+| Окружение | Назначение | Триггер |
+|-----------|-----------|---------|
+| `dev` | Эксперименты | каждый push в main |
+| `staging` | Pre-release валидация | tag `v*-rc*` |
+| `prod` | Живые учения | ручное promotion |
 
 ## Allocation seed
 
-For `staging` and `prod`, the `cybercity-data` allocation seed must be fixed so
-that IP addresses do not change between releases. Dev may use random seeds.
+Для `staging` и `prod` seed `cybercity-data` должен быть фиксированным, чтобы
+IP-адреса не менялись между релизами. Dev может использовать random seeds.
 
-## Backup and recovery
+## Backup и восстановление
 
-- PostgreSQL: continuous WAL archiving + daily snapshots.
-- Event audit log: write-once, replicated object storage.
-- City artifact: versioned in artifact store.
-- VM real services: Proxmox Backup Server or snapshot tooling.
+- PostgreSQL: continuous WAL archiving + daily снапшоты.
+- Audit log событий: write-once, реплицированный object storage.
+- City artifact: версионированный в artifact store.
+- Real VM: Proxmox Backup Server или snapshot-утилиты.
 
-## Security hardening
+## Усиление безопасности
 
-- Segment networks by organization and exposure.
-- Use mutual TLS for agent-to-bus communication.
-- Store secrets in Vault/KMS, never in repositories.
-- Restrict player VPN to city networks only.
-- Keep OT networks air-gapped from public segments.
-- Regular patching of real VM templates.
+- Сегментировать сети по организациям и exposure.
+- Использовать mutual TLS для agent-to-bus коммуникаций.
+- Хранить секреты в Vault/KMS, никогда в репозиториях.
+- Ограничить player VPN только city-сетями.
+- Держать OT-сети air-gapped от public-сегментов.
+- Регулярно патчить шаблоны real VM.
 
-## Related
+## Связанные документы
 
-- `docs/ARCHITECTURE.md` — system context.
-- `compose.yaml` — local dependency setup.
-- `cybercity-data` docs for artifact generation.
+- [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) — системный контекст.
+- [`compose.yaml`](../compose.yaml) — локальная поднималка зависимостей.
+- Документация `cybercity-data` для генерации артефактов.

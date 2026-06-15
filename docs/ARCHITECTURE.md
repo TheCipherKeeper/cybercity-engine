@@ -1,24 +1,24 @@
-# CyberCity Engine — Architecture
+# CyberCity Engine — Архитектура
 
 ## TL;DR
 
-`cybercity-engine` is an **event-driven runtime** for the CyberCity digital twin.
-It loads a static topology graph from `cybercity-data`, maintains a dynamic
-runtime state, and processes a stream of events through a graph-aware router.
-Everything that changes in the city happens through an event; every event is
-linked to its causes, forming a causal graph.
+`cybercity-engine` — это **событийный runtime** для цифрового двойника
+CyberCity. Он загружает статический топологический граф из `cybercity-data`,
+поддерживает динамическое runtime-состояние и обрабатывает поток событий
+через graph-aware router. Всё, что изменяется в городе, происходит через
+событие; каждое событие связано с причинами, формируя causal graph.
 
-## System context
+## Системный контекст
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────┐
-│                         External users                               │
-│   Players │ Instructors │ Read-only visitors │ Scenario authors     │
+│                         Внешние пользователи                           │
+│   Игроки │ Инструкторы │ Read-only посетители │ Авторы сценариев    │
 └─────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        CyberCity Platform                          │
+│                        Платформа CyberCity                         │
 │                                                                      │
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────────────────┐  │
 │  │     UI      │    │   Engine    │    │    Scenario Manager     │  │
@@ -43,108 +43,108 @@ linked to its causes, forming a causal graph.
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                    Infrastructure layer                            │
+│                    Инфраструктурный слой                           │
 │              Proxmox + Kubernetes + Cilium + Multus                │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-## Core responsibilities
+## Основные ответственности
 
-| Component | Responsibility |
-|-----------|---------------|
-| **cybercity-data** | Declarative city model, validation, artifact generation. |
-| **cybercity-engine** | Runtime state, event processing, propagation, snapshots. |
-| **cybercity-ui** | Visualization, player input, real-time updates. |
-| **Scenario Manager** | Starts/pauses/stops scenarios, injects events, scoring. |
-| **Redpanda** | Event bus between engine, UI, scenario manager, real services. |
-| **PostgreSQL** | Snapshots and audit log of the event graph. |
-| **MinIO / S3** | `engine.zip` artifacts and replay dumps. |
+| Компонент | Ответственность |
+|-----------|-----------------|
+| **cybercity-data** | Декларативная модель города, валидация, генерация артефактов. |
+| **cybercity-engine** | Runtime-состояние, обработка событий, propagation, снапшоты. |
+| **cybercity-ui** | Визуализация, ввод игрока, real-time обновления. |
+| **Scenario Manager** | Старт/пауза/стоп сценариев, инжекция событий, подсчёт очков. |
+| **Redpanda** | Event bus между движком, UI, scenario manager, реальными сервисами. |
+| **PostgreSQL** | Снапшоты и audit log событийного графа. |
+| **MinIO / S3** | Артефакты `engine.zip` и replay-дампы. |
 
-## The two graphs
+## Два графа
 
-### 1. Topology graph
+### 1. Топологический граф
 
-Loaded from `cybercity-data` artifacts.
+Загружается из артефактов `cybercity-data`.
 
 ```text
-Nodes: services
+Узлы: сервисы
   id, org_id, kind, exposure, host, network_id, bind_ip
   auth, data_classification, criticality, ports, software
 
-Edges: links
-  declared: api-call, auth, db-read, db-write, backup-of,
-            log-sink, trusts, vendor-vpn, dns-query, ntp-query
+Рёбра: связи
+  декларированные: api-call, auth, db-read, db-write, backup-of,
+                   log-sink, trusts, vendor-vpn, dns-query, ntp-query
 
   inferred: same_network, same_org, exposure_chain
 ```
 
-The topology graph is **immutable during a simulation**. It is replaced only
-when a new city artifact is loaded.
+Топологический граф **иммутабелен во время симуляции**. Заменяется только при
+загрузке нового артефакта города.
 
-### 2. Event graph
+### 2. Событийный граф
 
-Built at runtime.
+Строится во время работы.
 
 ```text
-Nodes: events
+Узлы: события
   event_id, parent_event_ids, correlation_id
   tick, timestamp, source_type, source_id
   event_type, target_id, payload, status
 
-Edges:
-  caused_by       ─ event B was caused by event A
-  propagated_to   ─ event B reached a neighbour because of event A
-  triggered_rule  ─ event B was created by a propagation rule
-  response_to     ─ event B is a deliberate response to event A
+Рёбра:
+  caused_by       ─ событие B вызвано событием A
+  propagated_to   ─ событие B дошло до соседа благодаря событию A
+  triggered_rule  ─ событие B создано правилом propagation
+  response_to     ─ событие B — намеренный ответ на событие A
 ```
 
-The event graph is **append-only**. Events are never deleted; they may be
-summarized or archived to cold storage.
+Событийный граф **append-only**. События никогда не удаляются; могут только
+суммироваться или уходить в cold storage.
 
-### Link between graphs
+### Связь между графами
 
 ```text
-Topology              Event
+Топология              Событие
    │                    │
-   │◄── target_id ──────│  "this event happened to bank-web"
+   │◄── target_id ─────│  "это событие случилось с bank-web"
    │                    │
-   │── neighbors() ────►│  "where can this event go next?"
+   │── neighbors() ───►│  "куда это событие может пойти дальше?"
    │                    │
-   │◄── state change ───┤  "bank-web is now compromised"
+   │◄── state change ───┤  "bank-web теперь compromised"
 ```
 
-## Event flow
+## Поток событий
 
 ```text
-1. Source produces an event
+1. Источник производит событие
       player scan → bank-web
 
-2. Engine receives event via queue or Redpanda
+2. Движок получает событие через queue или Redpanda
 
-3. Event is added to the event graph
+3. Событие добавляется в событийный граф
 
-4. Handler updates runtime state
+4. Handler обновляет runtime-состояние
       bank-web.seen_by += player-1
 
-5. Router decides propagation
+5. Router решает propagation
       log-sink edge + noisy scan → alert event
 
-6. Child events are enqueued and processed
+6. Дочерние события ставятся в очередь и обрабатываются
 
-7. State changes emit STATE_CHANGE events
+7. Изменения состояния эмитят STATE_CHANGE события
       bank-web.status: up → compromised
 
-8. State changes may propagate again
-      compromised bank-web affects bank-db via db-read
+8. Изменения состояния могут снова распространяться
+      compromised bank-web влияет на bank-db через db-read
 
-9. Snapshot + broadcast to UI
+9. Снапшот + broadcast в UI
 ```
 
-## Engine internals
+## Внутреннее устройство движка
 
 ```text
 ┌─────────────────────────────────────────┐
-│              Engine                       │
+│              Engine                     │
 │                                          │
 │  ┌─────────────┐    ┌─────────────────┐  │
 │  │ API / WS    │◄──►│ Event Processor │  │
@@ -168,94 +168,95 @@ Topology              Event
 
 ### StateManager
 
-- Single owner of mutable `WorldState`.
-- Applies events and produces `STATE_CHANGE` events.
-- Persists snapshots through a repository (PostgreSQL).
+- Единственный владелец изменяемого `WorldState`.
+- Применяет события и производит `STATE_CHANGE` события.
+- Сохраняет снапшоты через репозиторий (PostgreSQL).
 
 ### EventGraph
 
-- In-memory recent window.
-- Builds causal edges automatically from `parent_event_ids`.
-- Supports lineage queries: "why did bank-web become compromised?"
+- In-memory окно недавних событий.
+- Автоматически строит causal-рёбра из `parent_event_ids`.
+- Поддерживает lineage-запросы: «почему bank-web стал compromised?»
 
 ### EventRouter
 
-- Pure rules that inspect an event + source node + outgoing edge.
-- Decides whether and how to propagate to neighbours.
-- Rules are composable and unit-testable.
+- Чистые правила, которые анализируют событие + исходный узел +
+  исходящее ребро.
+- Решают, стоит ли и как распространять к соседям.
+- Правила композитные и unit-testable.
 
-## Service execution modes
+## Режимы исполнения сервисов
 
-| Mode | Who answers events | Use case |
-|------|-------------------|----------|
-| **simulated** | Engine emulator | Lightweight services, bulk decoys. |
-| **real** | External agent on VM/pod | High-value targets for hands-on training. |
-| **decoy** | Engine emulator with fake fingerprint | Honeypots, threat intelligence. |
+| Режим | Кто отвечает на события | Когда используется |
+|-------|-------------------------|--------------------|
+| **simulated** | Эмулятор движка | Лёгкие сервисы, массовые decoys. |
+| **real** | Внешний агент на VM/pod | High-value target для hands-on. |
+| **decoy** | Эмулятор с fake fingerprint | Honeypots, threat intelligence. |
 
-The engine discovers real services through **heartbeat events** sent by a small
-agent installed on each real VM.
+Движок обнаруживает real-сервисы через **heartbeat-события**, отправляемые
+небольшим агентом на каждой real VM.
 
-## Deployment layers
+## Слои развёртывания
 
-| Layer | Purpose | Example tools |
-|-------|---------|---------------|
-| **Management** | Admin access, CI/CD, monitoring | Proxmox host, Terraform, Ansible |
-| **Control** | Engine, database, messaging, GitOps | K8s, Redpanda, PostgreSQL, ArgoCD |
+| Слой | Назначение | Примеры инструментов |
+|------|------------|----------------------|
+| **Management** | Админский доступ, CI/CD, мониторинг | Proxmox host, Terraform, Ansible |
+| **Control** | Движок, БД, messaging, GitOps | K8s, Redpanda, PostgreSQL, ArgoCD |
 | **City / Data** | Real VMs, simulated pods, player workstations | VMs, Multus, Cilium, VyOS |
 
 ## Observability
 
-The engine is observable by design:
+Движок наблюдаем по дизайну:
 
-- **Metrics:** tick duration, queue depth, event throughput, service health.
-- **Logs:** structured JSON logs with correlation IDs.
-- **Traces:** event lineage through the event graph.
-- **Dashboards:** Grafana with city-level and per-service views.
+- **Метрики:** tick duration, queue depth, event throughput, health сервисов.
+- **Логи:** structured JSON logs с correlation IDs.
+- **Трейсы:** lineage событий через событийный граф.
+- **Дашборды:** Grafana с city-level и per-service видами.
 
-## Security model
+## Модель безопасности
 
-- Network segmentation is explicit in the topology graph.
-- Public services are reachable only through declared exposure.
-- OT segments are isolated.
-- Real service agents authenticate to the event bus.
-- Public UI is read-only; player actions require authenticated sessions.
-- Secrets live in Vault or cloud KMS, never in repositories.
+- Сетевая сегментация явно задана в топологическом графе.
+- Публичные сервисы достижимы только через declared exposure.
+- OT-сегменты изолированы.
+- Агенты real-сервисов аутентифицируются к event bus.
+- Публичный UI read-only; действия игрока требуют аутентифицированной сессии.
+- Секреты живут в Vault или cloud KMS, никогда в репозиториях.
 
-## Scalability targets
+## Целевые показатели масштабируемости
 
-| Resource | Home lab | Production sketch |
-|----------|----------|---------------------|
-| Services | 300 | 1,000+ |
-| Events/sec | 100 | 10,000+ |
-| Players | 10 | 100+ |
+| Ресурс | Home lab | Production-набросок |
+|--------|----------|---------------------|
+| Сервисы | 300 | 1,000+ |
+| Событий/сек | 100 | 10,000+ |
+| Игроки | 10 | 100+ |
 | Real VMs | 6–10 | 50–100 |
-| Latency | <1s per tick | <100ms per event |
+| Latency | <1s на tick | <100ms на событие |
 
-## Extension points
+## Точки расширения
 
-Adding new behaviour does not require changing the engine core:
+Добавление нового поведения не требует изменения ядра движка:
 
-- New event type → add handler.
-- New propagation rule → add to `EventRouter`.
-- New background process → register in tick loop.
-- New scenario → scenario manager injects events.
-- New organization → add YAML in `cybercity-data`, reload artifact.
+- Новый тип события → добавить handler.
+- Новое propagation-правило → добавить в `EventRouter`.
+- Новый background-процесс → зарегистрировать в tick-цикле.
+- Новый сценарий → scenario manager инжектирует события.
+- Новая организация → добавить YAML в `cybercity-data`, перезагрузить артефакт.
 
-## Roadmap to first public demo
+## Дорожная карта к первой публичной демонстрации
 
 1. **Core engine** ✅ — topology, event graph, router, state, API.
-2. **Persistence** — PostgreSQL snapshots and audit.
-3. **Messaging** — Redpanda integration.
-4. **Scenario manager** — first scripted scenario.
-5. **UI** — interactive graph, event log, command panel.
+2. **Persistence** — PostgreSQL-снапшоты и audit.
+3. **Messaging** — интеграция с Redpanda.
+4. **Scenario manager** — первый скриптованный сценарий.
+5. **UI** — интерактивный граф, event log, панель команд.
 6. **Home lab deployment** — Proxmox + K8s.
 7. **Public read-only demo** — Cloudflare tunnel.
 
-## Related documents
+## Связанные документы
 
-- [`VISION.md`](VISION.md) — project purpose and principles.
-- [`docs/adr/0001-two-graph-architecture.md`](adr/0001-two-graph-architecture.md) — ADR on two graphs.
-- [`DATA_FLOW.md`](DATA_FLOW.md) — detailed event flow (to be written).
-- [`MODELS.md`](MODELS.md) — data model reference (to be written).
-- [`API.md`](API.md) — HTTP/WebSocket protocol (to be written).
-- [`DEPLOYMENT.md`](DEPLOYMENT.md) — deployment guide (to be written).
+- [`VISION.md`](VISION.md) — цель проекта и принципы.
+- [`docs/adr/0001-two-graph-architecture.md`](adr/0001-two-graph-architecture.md) — ADR о двух графах.
+- [`DATA_FLOW.md`](DATA_FLOW.md) — детальный поток событий.
+- [`MODELS.md`](MODELS.md) — справочник моделей.
+- [`API.md`](API.md) — протокол HTTP/WebSocket.
+- [`DEPLOYMENT.md`](DEPLOYMENT.md) — руководство по развёртыванию.

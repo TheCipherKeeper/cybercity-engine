@@ -1,10 +1,11 @@
 # CyberCity Engine — API
 
-The engine exposes a **thin HTTP and WebSocket API**. It does not contain
-business logic; it converts external input into events and forwards them to the
-engine. All state changes happen inside the engine tick loop.
+Движок предоставляет **тонкий HTTP и WebSocket API**. Он не содержит
+бизнес-логики; он валидирует входные данные, преобразует их в события и
+пересылает в движок. Все изменения состояния происходят внутри tick-цикла
+движка.
 
-## Base URL
+## Базовый URL
 
 ```text
 http://engine-host:8000
@@ -14,7 +15,7 @@ http://engine-host:8000
 
 ### `GET /health`
 
-Returns engine status.
+Возвращает статус движка.
 
 ```json
 {
@@ -24,11 +25,11 @@ Returns engine status.
 }
 ```
 
-## State
+## Состояние
 
 ### `GET /state`
 
-Returns the full current `WorldState`.
+Возвращает полный текущий `WorldState`.
 
 ```json
 {
@@ -41,11 +42,11 @@ Returns the full current `WorldState`.
 }
 ```
 
-## Topology
+## Топология
 
 ### `GET /topology`
 
-Returns the static `TopologyGraph`.
+Возвращает статический `TopologyGraph`.
 
 ```json
 {
@@ -56,11 +57,11 @@ Returns the static `TopologyGraph`.
 }
 ```
 
-## Events
+## События
 
 ### `GET /events/recent?limit=100`
 
-Returns recent events from the in-memory event graph.
+Возвращает недавние события из in-memory событийного графа.
 
 ```json
 [
@@ -75,13 +76,13 @@ Returns recent events from the in-memory event graph.
 ]
 ```
 
-## Commands
+## Команды
 
 ### `POST /commands`
 
-Submit a player or instructor command.
+Отправляет команду игрока или инструктора.
 
-Request:
+Запрос:
 
 ```json
 {
@@ -94,7 +95,7 @@ Request:
 }
 ```
 
-Response:
+Ответ:
 
 ```json
 {
@@ -103,16 +104,16 @@ Response:
 }
 ```
 
-Supported actions are handled by the engine, not the API. The API only
-validates that required fields are present.
+Поддерживаемые действия обрабатываются движком, а не API. API только
+проверяет наличие обязательных полей.
 
 ## WebSocket `/ws`
 
-Connect for real-time updates.
+Подключение для real-time обновлений.
 
-### On connect
+### При подключении
 
-Server sends a snapshot:
+Сервер отправляет снапшот:
 
 ```json
 {
@@ -121,7 +122,7 @@ Server sends a snapshot:
 }
 ```
 
-### Client to server: command
+### Клиент → сервер: команда
 
 ```json
 {
@@ -132,7 +133,7 @@ Server sends a snapshot:
 }
 ```
 
-### Server to client: command result
+### Сервер → клиент: результат команды
 
 ```json
 {
@@ -142,7 +143,7 @@ Server sends a snapshot:
 }
 ```
 
-### Server to client: state update
+### Сервер → клиент: изменение состояния
 
 ```json
 {
@@ -159,7 +160,7 @@ Server sends a snapshot:
 }
 ```
 
-### Server to client: event log
+### Сервер → клиент: event log
 
 ```json
 {
@@ -169,7 +170,7 @@ Server sends a snapshot:
 }
 ```
 
-### Server to client: simulation status
+### Сервер → клиент: статус симуляции
 
 ```json
 {
@@ -180,13 +181,13 @@ Server sends a snapshot:
 }
 ```
 
-## Error responses
+## Ответы с ошибками
 
-The API returns HTTP 422 for invalid command payloads. Unknown commands or
-targets are accepted as events; the engine may later mark them as suppressed
-or rejected via the event graph.
+API возвращает HTTP 422 для невалидных command payloads. Неизвестные команды
+или target'ы принимаются как события; движок позже может пометить их как
+suppressed или rejected через событийный граф.
 
-WebSocket errors are sent as:
+WebSocket-ошибки отправляются как:
 
 ```json
 {
@@ -195,7 +196,7 @@ WebSocket errors are sent as:
 }
 ```
 
-## Future additions
+## Будущие дополнения
 
 - `POST /scenarios/{id}/start`
 - `POST /scenarios/{id}/pause`
@@ -203,8 +204,8 @@ WebSocket errors are sent as:
 - `GET /events/{event_id}/lineage`
 - `GET /replay?from_tick=0&to_tick=100`
 
-## Related
+## Связанные документы
 
-- `docs/ARCHITECTURE.md` — system context.
-- `docs/MODELS.md` — data schemas.
-- `docs/DATA_FLOW.md` — how commands become events.
+- [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) — системный контекст.
+- [`docs/MODELS.md`](MODELS.md) — схемы данных.
+- [`docs/DATA_FLOW.md`](DATA_FLOW.md) — как команды превращаются в события.
