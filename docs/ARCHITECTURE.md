@@ -145,7 +145,7 @@ CyberCity. Он загружает статический топологичес
 - `EventStore` — хранение событийного графа.
 - `SnapshotRepository` — снапшоты WorldState.
 - `MessageBus` — pub/sub событий.
-- `ServiceAgent` — управление real/decoy сервисами.
+- `ServiceAgent` — драйвер vm/container-цели (lite-стабам не нужен); движок — регистратор.
 - `TopologyLoader` — загрузка topology-артефактов.
 - `StateBroadcaster` — рассылка состояния подписчикам.
 
@@ -182,16 +182,27 @@ CyberCity. Он загружает статический топологичес
 
 ## Режимы исполнения сервисов
 
-| Режим | Кто отвечает на события | Когда используется |
-|-------|-------------------------|--------------------|
-| **simulated** | Эмулятор движка | Лёгкие сервисы, массовые decoys. |
-| **real** | Out-of-band наблюдатель (`cybercity-collector`) | High-value target для hands-on. |
-| **decoy** | Эмулятор с fake fingerprint | Honeypots, threat intelligence. |
+У сервиса есть **`runtime_kind`** (deployment-time) — как он исполняется.
+Назначается в `cybercity-manage` service-mapping manifest, **не** часть
+канонической city data и не попадает в `engine.zip`. По умолчанию — `lite`.
 
-Движок обнаруживает real-сервисы через **heartbeat-события**, наблюдаемые
-out-of-band через `cybercity-collector` (см.
-[`adr/0003-hybrid-execution.md`](adr/0003-hybrid-execution.md) и
-[`cybercity/adr/0003-collector-rust-out-of-band.md`](https://github.com/TheCipherKeeper/cybercity/blob/main/adr/0003-collector-rust-out-of-band.md)).
+| `runtime_kind` | Что это | Кто отвечает на события |
+|-------|---|---|
+| **vm** | полная VM, real OS/software | Out-of-band наблюдатель (`cybercity-collector`) |
+| **container** | контейнер, real software (gVisor/Kata) | Out-of-band наблюдатель |
+| **lite** | лёгкий stub-контейнер: реальный сокет + подделанный баннер | Out-of-band наблюдатель |
+
+`honeypot` — отдельный флаг назначения-наживки (свойство сервиса в
+`cybercity-data`), ортогонален `runtime_kind`. Движок — **регистратор, не
+симулятор**: он не вычисляет исходы сам, не имеет эмулятора и не плодит класс
+«engine-synthesized service events». Все runtime-цели (`vm`/`container`/`lite`)
+наблюдаются коллектором out-of-band единообразно; исход (scan, compromise, state
+change) приходит как подписанное событие, движок его регистрирует и ведёт
+причинный граф. Если цель перестаёт наблюдаться, движок помечает её `down`.
+Обоснование —
+[`cybercity/adr/0004-runtime-kind-vm-container-lite.md`](https://github.com/TheCipherKeeper/cybercity/blob/main/adr/0004-runtime-kind-vm-container-lite.md)
+(см. также Superseded [`adr/0003-hybrid-execution.md`](adr/0003-hybrid-execution.md)
+и [`cybercity/adr/0003-collector-rust-out-of-band.md`](https://github.com/TheCipherKeeper/cybercity/blob/main/adr/0003-collector-rust-out-of-band.md)).
 
 ## Observability
 
@@ -207,8 +218,9 @@ out-of-band через `cybercity-collector` (см.
 - Сетевая сегментация явно задана в топологическом графе.
 - Публичные сервисы достижимы только через declared exposure.
 - OT-сегменты изолированы.
-- Наблюдение за real-сервисами — out-of-band через `cybercity-collector`
-  (подписанные события); in-guest телеметрия — best-effort, не для scoring.
+- Наблюдение за runtime-целями (vm/container/lite) — out-of-band через
+  `cybercity-collector` (подписанные события); in-guest телеметрия —
+  best-effort, не для scoring.
 - Публичный UI read-only; действия игрока требуют аутентифицированной сессии.
 - Секреты живут в Vault или cloud KMS, никогда в репозиториях.
 
@@ -219,7 +231,7 @@ out-of-band через `cybercity-collector` (см.
 | Сервисы | 300 | 1,000+ |
 | Событий/сек | 100 | 10,000+ |
 | Игроки | 10 | 100+ |
-| Real VMs | 6–10 | 50–100 |
+| VM/контейнеры | 6–10 | 50–100 |
 | Latency | <1s на tick | <100ms на событие |
 
 ## Точки расширения

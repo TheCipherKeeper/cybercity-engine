@@ -19,7 +19,7 @@ G = (V, E, φ)
 Для каждого v ∈ V:
 
 ```
-φ(v) = (kind, exposure, auth, data_class, criticality, software, ports, is_decoy)
+φ(v) = (kind, exposure, auth, data_class, criticality, software, ports, is_honeypot)
 ```
 
 где:
@@ -33,7 +33,7 @@ G = (V, E, φ)
 | criticality | {low, medium, high, critical} |
 | software | (vendor, product, version, cve_id) |
 | ports | список tcp/udp портов |
-| is_decoy | {0, 1} |
+| is_honeypot | {0, 1} |
 
 ### 1.2. Атрибуты рёбер
 
@@ -244,7 +244,10 @@ apply(eff, v, t) =
 | **Agent** | Простые факты: service_down, file_changed, process_detected, dns_hijacked | Агент на real VM наблюдает и шлёт событие |
 | **Scenario** | Заранее определённые события в сценарии | Scenario manager инжектирует по таймеру/условию |
 | **Instructor** | Достижение игрока | Человек в UI нажимает "подтвердить" |
-| **Engine emulator** | События для simulated/decoy сервисов | Движок вычисляет по правилам |
+
+> Класса «engine-synthesized service events» нет: движок — регистратор, не
+> симулятор. vm/container/lite-цели наблюдаются коллектором (см. **Agent**);
+> сценарий-инжекты — через **Scenario**. Обоснование — umbrella ADR-0004.
 
 ### 5.2. Протокол агента
 
@@ -272,7 +275,7 @@ apply(eff, v, t) =
 
 ### 6.1. Защита сервиса
 
-Защита влияет на то, как easily simulated/сценарий-события могут произойти:
+Защита влияет на то, как легко сценарий-инжекты и наблюдаемые атаки достигают эффекта:
 
 ```
 defense(v) = α · auth_score(auth(v))
@@ -292,9 +295,12 @@ attack_strength(a, v, t) = base(vector(a))
                          × fatigue_penalty(attacker_id(a), t)
 ```
 
-### 6.3. Условие успеха для simulated-сервисов
+### 6.3. Условие успеха для сценарий-инжектов
 
-Для simulated сервисов движок решает, произошло ли событие:
+Движок — регистратор: он не вычисляет исходы атак по vm/container/lite-целям
+сам (это делает реальная цель и наблюдается коллектором). Формула успеха
+применяется только к **сценарий-инжектам** — заранее определённым событиям,
+которые движок «отыгрывает» от имени сценария, а не выдумывает для сервиса:
 
 ```
 p_success(a, v, kind) = σ(λ · (attack_strength(a, v, t) - defense(v) + severity_bonus(kind)))
@@ -350,9 +356,11 @@ for eff in i.effects:
         S_u(t + delay(e)) += eff scaled by weight(e) · decay(e)
 ```
 
-## 9. Decoy-специфика
+## 9. Honeypot-специфика
 
-Decoy-сервисы всегда обрабатываются эмулятором движка. Они:
+Honeypot-сервисы (наживка, флаг `is_honeypot`) — это runtime-цель (обычно
+`lite`), наблюдаемая коллектором как любая другая. Их назначение — привлекать
+сканирования и атаки, собирать threat intel. Они:
 
 - легко отвечают на scan/attack;
 - генерируют `noise_alert` события при любом контакте;
@@ -421,7 +429,6 @@ e = (t, event_id, parent_ids, correlation_id, source_type, source_id,
 | apply(eff, v) | StateManager |
 | propagation по рёбрам | EventRouter / PropagationModel |
 | defense/attack_strength | DefenseCalculator / AttackCalculator |
-| simulated events | Engine Emulator |
 | city_resilience | MetricsEngine |
 | score | ScoringEngine |
 
@@ -431,5 +438,5 @@ e = (t, event_id, parent_ids, correlation_id, source_type, source_id,
    `engine.zip`?
 2. Как инструктор подтверждает события: отдельный UI или API?
 3. Нужен ли автоматический scorer для перевода agent facts в impact-события?
-4. Как decoy-события влияют на scoring?
+4. Как honeypot-события влияют на scoring?
 5. Как учитывать encryption рёбер при propagation?

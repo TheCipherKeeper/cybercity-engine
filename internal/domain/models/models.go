@@ -11,15 +11,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// ServiceMode определяет, как сервис реализован в runtime.
-type ServiceMode string
-
-const (
-	ServiceModeSimulated ServiceMode = "simulated"
-	ServiceModeReal      ServiceMode = "real"
-	ServiceModeDecoy     ServiceMode = "decoy"
-)
-
 // ServiceStatus — runtime-статус сервиса.
 type ServiceStatus string
 
@@ -114,8 +105,8 @@ type TopologyNode struct {
 	DataClassification string         `json:"data_classification,omitempty"`
 	Criticality        Criticality    `json:"criticality,omitempty"`
 	Ports              []string       `json:"ports,omitempty"`
-	IsDecoy            bool           `json:"is_decoy,omitempty"`
-	DecoyKind          string         `json:"decoy_kind,omitempty"`
+	IsHoneypot         bool           `json:"is_honeypot,omitempty"`
+	HoneypotKind       string         `json:"honeypot_kind,omitempty"`
 	Software           map[string]any `json:"software,omitempty"`
 	OSHint             string         `json:"os_hint,omitempty"`
 }

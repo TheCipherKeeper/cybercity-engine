@@ -28,10 +28,16 @@
 | `data_classification` | `string` | Метка чувствительности данных. |
 | `criticality` | `Criticality` | Бизнес-критичность: critical, high, medium, low. |
 | `ports` | `[]string` | Открытые порты, например `tcp/443`. |
-| `is_decoy` | `bool` | Является ли сервис decoy. |
-| `decoy_kind` | `*string` | Тип fingerprint decoy (nullable). |
+| `is_honeypot` | `bool` | Флаг honeypot-назначения (наживка). |
+| `honeypot_kind` | `*string` | Тип fingerprint honeypot (nullable). |
 | `software` | `map[string]any` | Вендор/продукт/версия/CVE. |
 | `os_hint` | `*string` | Подсказка об ОС (nullable). |
+
+`runtime_kind` (`vm`/`container`/`lite`) — **deployment-time**: назначается в
+`cybercity-manage` (service-mapping manifest), в топологии отсутствует и в
+`engine.zip` не попадает. `is_honeypot`/`honeypot_kind` — свойства назначения
+(наживка), не runtime-вид. См.
+[`cybercity/adr/0004-runtime-kind-vm-container-lite.md`](https://github.com/TheCipherKeeper/cybercity/blob/main/adr/0004-runtime-kind-vm-container-lite.md).
 
 ### TopologyEdge
 
@@ -69,7 +75,7 @@
 | `status` | `ServiceStatus` | up, down, compromised, maintenance. |
 | `health` | `float64` | Индикатор здоровья 0.0–1.0. |
 | `compromise_vector` | `*string` | Как сервис был скомпрометирован (nullable). |
-| `last_heartbeat` | `*time.Time` | Последний heartbeat real-сервиса (nullable). |
+| `last_heartbeat` | `*time.Time` | Последний heartbeat наблюдаемой (vm/container) цели (nullable). |
 | `seen_by` | `[]string` | Наблюдатели (сканеры). |
 | `flags` | `map[string]any` | Сценарий-специфичные флаги. |
 | `variables` | `map[string]any` | Локальные переменные процессов. |

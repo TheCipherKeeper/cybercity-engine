@@ -12,8 +12,8 @@ func TestTopologyNodeDefaults(t *testing.T) {
 	if node.Criticality != CriticalityMedium {
 		t.Errorf("expected criticality medium, got %q", node.Criticality)
 	}
-	if node.IsDecoy {
-		t.Error("expected is_decoy false")
+	if node.IsHoneypot {
+		t.Error("expected is_honeypot false")
 	}
 }
 

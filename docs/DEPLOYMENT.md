@@ -62,7 +62,7 @@ curl http://localhost:8000/topology
 
 | Профиль | CPU | RAM | Storage | Сервисы |
 |---------|-----|-----|---------|---------|
-| Entry | 8c/16t | 32 GB | 1 TB NVMe | В основном simulated, 0–2 real VM |
+| Entry | 8c/16t | 32 GB | 1 TB NVMe | В основном lite-стабы, 0–2 VM |
 | Comfort | 16c/32t | 64 GB | 2 TB NVMe | Смешанный, ~10 real VM |
 | Sweet spot | 24c/48t | 128 GB | 4 TB NVMe | Full hybrid, ~30 real VM |
 
@@ -71,7 +71,7 @@ curl http://localhost:8000/topology
 ```text
 Proxmox VE
 ├── k8s-cp-01,02,03          (control plane K8s)
-├── k8s-worker-01,02,03      (движок, UI, simulated-сервисы)
+├── k8s-worker-01,02,03      (движок, UI, lite-стабы)
 ├── db-01,02                   (PostgreSQL HA)
 ├── redpanda-01,02,03          (messaging)
 ├── router-01                  (VyOS/pfSense)
@@ -85,7 +85,7 @@ Proxmox VE
 ### Kubernetes
 
 Используйте Talos Linux или kubeadm на Ubuntu. Деплой движка, UI,
-simulated-сервисов, Redpanda, PostgreSQL и мониторинга через Helm/Kustomize.
+lite-стабов, Redpanda, PostgreSQL и мониторинга через Helm/Kustomize.
 
 ### Сеть
 

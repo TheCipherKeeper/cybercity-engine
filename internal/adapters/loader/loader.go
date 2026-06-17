@@ -163,15 +163,15 @@ func parseTopology(raw map[string]any) (*models.TopologyGraph, error) {
 }
 
 func parseNode(svc map[string]any) *models.TopologyNode {
-	decoy := svc["decoy"]
-	if decoy == nil {
-		decoy = svc["decoy_profile"]
+	honeypot := svc["honeypot"]
+	if honeypot == nil {
+		honeypot = svc["honeypot_profile"]
 	}
-	decoyMap, _ := decoy.(map[string]any)
-	decoyKind := ""
-	if decoyMap != nil {
-		if k, ok := decoyMap["kind"].(string); ok {
-			decoyKind = k
+	honeypotMap, _ := honeypot.(map[string]any)
+	honeypotKind := ""
+	if honeypotMap != nil {
+		if k, ok := honeypotMap["kind"].(string); ok {
+			honeypotKind = k
 		}
 	}
 
@@ -190,8 +190,8 @@ func parseNode(svc map[string]any) *models.TopologyNode {
 		DataClassification: stringOr(svc["data_classification"], "internal"),
 		Criticality:        models.Criticality(stringOr(svc["criticality"], "medium")),
 		Ports:              stringSlice(svc["ports"]),
-		IsDecoy:            decoy != nil,
-		DecoyKind:          decoyKind,
+		IsHoneypot:         honeypot != nil,
+		HoneypotKind:       honeypotKind,
 		Software:           mapAny(svc["software"]),
 		OSHint:             stringOr(svc["os_hint"], ""),
 	}

@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted
+Superseded — см.
+[`cybercity/adr/0004-runtime-kind-vm-container-lite.md`](https://github.com/TheCipherKeeper/cybercity/blob/main/adr/0004-runtime-kind-vm-container-lite.md).
+Режимы `{real, simulated, decoy}` заменены на `runtime_kind {vm, container, lite}`
+(deployment-time) + флаг назначения `honeypot` (бывший `decoy`); движок —
+регистратор, не симулятор (класса «engine-synthesized service events» больше нет).
+Тело ADR сохранено как история.
 
 ## Context
 
