@@ -10,8 +10,13 @@
 `cybercity-data`, ведёт runtime-состояние города и обрабатывает поток событий
 через graph-aware router. См. ADR-0006 для обоснования выбора языка.
 
-> Канон композиции (6 репозиториев, контракты, доверительная граница) —
+> Канон состава, контрактов и доверительной границы —
 > [`cybercity/COMPOSITION.md`](https://github.com/TheCipherKeeper/cybercity/blob/main/COMPOSITION.md).
+> Системное видение и архитектура —
+> [`cybercity/VISION.md`](https://github.com/TheCipherKeeper/cybercity/blob/main/VISION.md),
+> [`cybercity/ARCHITECTURE.md`](https://github.com/TheCipherKeeper/cybercity/blob/main/ARCHITECTURE.md).
+> Кросс-репо конвенции (язык, скелет репо, ADR-формат, event envelope) —
+> [`cybercity/CONVENTIONS.md`](https://github.com/TheCipherKeeper/cybercity/blob/main/CONVENTIONS.md).
 
 ## Архитектура
 
@@ -35,14 +40,18 @@ Runtime-состояние сохраняется в **PostgreSQL**.
 
 | Документ | Назначение |
 |----------|-----------|
-| [`docs/VISION.md`](docs/VISION.md) | Зачем существует проект и к чему стремится. |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Высокоуровневая архитектура и системный контекст. |
-| [`docs/DATA_FLOW.md`](docs/DATA_FLOW.md) | Как события движутся через систему. |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Внутреннее устройство движка: onion/ports-and-adapters, два графа в коде. |
+| [`docs/DATA_FLOW.md`](docs/DATA_FLOW.md) | Как события движутся через движок. |
 | [`docs/MODELS.md`](docs/MODELS.md) | Справочник по моделям данных. |
+| [`docs/MATH_MODEL.md`](docs/MATH_MODEL.md) | Математическая основа движка: формальные определения, impact/scoring. |
 | [`docs/API.md`](docs/API.md) | Протокол HTTP и WebSocket. |
 | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Локальная разработка, home lab, production-набросок. |
-| [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) | Как работать над движком. |
+| [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) | Как работать над движком (build/lint/test, рецепты). |
 | [`docs/adr/`](docs/adr/) | Architecture decision records. |
+
+> Системное видение и архитектура (контекст, ответственности, слои) — в хабе:
+> [`cybercity/VISION.md`](https://github.com/TheCipherKeeper/cybercity/blob/main/VISION.md),
+> [`cybercity/ARCHITECTURE.md`](https://github.com/TheCipherKeeper/cybercity/blob/main/ARCHITECTURE.md).
 
 ## Быстрый старт (local Docker Compose)
 

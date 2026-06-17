@@ -78,8 +78,8 @@ UI broadcast
 ## 3. Heartbeat реального сервиса
 
 ```text
-cybercity-agent на VM bank-web
-    │ шлёт HEARTBEAT событие каждые 10s
+cybercity-collector (out-of-band наблюдатель, на гипервизоре/K8s-узле)
+    │ наблюдает VM bank-web, шлёт подписанный (Ed25519) HEARTBEAT каждые 10s
     ▼
 Redpanda topic city.service.heartbeat
     ▼

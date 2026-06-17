@@ -2,6 +2,14 @@
 
 ## Иерархия документов (от старшего к младшему)
 
+**Над репозиторием** — хаб `cybercity` держит системные документы:
+
+- [`cybercity/COMPOSITION.md`](https://github.com/TheCipherKeeper/cybercity/blob/main/COMPOSITION.md) — канон состава, контрактов, доверительной границы.
+- [`cybercity/CONVENTIONS.md`](https://github.com/TheCipherKeeper/cybercity/blob/main/CONVENTIONS.md) — кросс-репо конвенции (язык, скелет репо, ADR-формат, event envelope).
+- [`cybercity/adr/`](https://github.com/TheCipherKeeper/cybercity/blob/main/adr/) — сквозные ADR (почему 6 репо, доверительная граница, Rust-коллектор).
+
+**Внутри репозитория:**
+
 1. `docs/adr/` — действующие архитектурные решения. ADR со статусом
    `superseded` не имеют силы.
 2. `AGENTS.md` (этот файл) — операционные правила работы в репозитории.
@@ -71,10 +79,10 @@ cybercity-engine/
 │       └── (postgres, redpanda — future)
 ├── ..._test.go                       # unit tests inside packages
 └── docs/                             # документация
-    ├── VISION.md
     ├── ARCHITECTURE.md
     ├── DATA_FLOW.md
     ├── MODELS.md
+    ├── MATH_MODEL.md
     ├── API.md
     ├── DEPLOYMENT.md
     ├── DEVELOPMENT.md

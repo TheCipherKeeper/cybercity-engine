@@ -8,57 +8,11 @@ CyberCity. Он загружает статический топологичес
 через graph-aware router. Всё, что изменяется в городе, происходит через
 событие; каждое событие связано с причинами, формируя causal graph.
 
-## Системный контекст
-
-```text
-┌─────────────────────────────────────────────────────────────────────┐
-│                         Внешние пользователи                           │
-│   Игроки │ Инструкторы │ Read-only посетители │ Авторы сценариев    │
-└─────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                        Платформа CyberCity                         │
-│                                                                      │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────────────────┐  │
-│  │     UI      │    │   Engine    │    │    Scenario Manager     │  │
-│  │  (React/    │◄──►│    (Go)     │◄──►│      (Python)           │  │
-│  │  WebSocket) │    │             │    │                         │  │
-│  └──────┬──────┘    └──────┬──────┘    └─────────────────────────┘  │
-│         │                   │                                        │
-│         │                   ▼                                        │
-│         │          ┌─────────────────┐                               │
-│         │          │ Redpanda/Kafka  │                               │
-│         │          │  (event bus)    │                               │
-│         │          └─────────────────┘                               │
-│         │                   │                                        │
-│         │     ┌─────────────┼─────────────┐                        │
-│         │     ▼             ▼             ▼                          │
-│  ┌──────▼─────┐   ┌────────▼────────┐   ┌──────────────┐          │
-│  │ PostgreSQL │   │  Real services  │   │ Simulated    │          │
-│  │  (state)   │   │  (VM / pod)     │   │ services     │          │
-│  └────────────┘   └─────────────────┘   └──────────────┘          │
-│                                                                      │
-└─────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                    Инфраструктурный слой                           │
-│              Proxmox + Kubernetes + Cilium + Multus                │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-## Основные ответственности
-
-| Компонент | Ответственность |
-|-----------|-----------------|
-| **cybercity-data** | Декларативная модель города, валидация, генерация артефактов. |
-| **cybercity-engine** | Runtime-состояние, обработка событий, propagation, снапшоты. |
-| **cybercity-ui** | Визуализация, ввод игрока, real-time обновления. |
-| **Scenario Manager** | Старт/пауза/стоп сценариев, инжекция событий, подсчёт очков. |
-| **Redpanda** | Event bus между движком, UI, scenario manager, реальными сервисами. |
-| **PostgreSQL** | Снапшоты и audit log событийного графа. |
-| **MinIO / S3** | Артефакты `engine.zip` и replay-дампы. |
+> Системный контекст (диаграмма, таблица ответственностей, слои развёртывания,
+> observability и модель безопасности на системном уровне) — в
+> [`cybercity/ARCHITECTURE.md`](https://github.com/TheCipherKeeper/cybercity/blob/main/ARCHITECTURE.md).
+> Ниже — только внутреннее устройство движка. Развёртывание движка подробно —
+> в [`DEPLOYMENT.md`](DEPLOYMENT.md).
 
 ## Два графа
 
@@ -217,7 +171,7 @@ CyberCity. Он загружает статический топологичес
 
 - In-memory окно недавних событий.
 - Автоматически строит causal-рёбра из `parent_event_ids`.
-- Поддерживает lineage-запросы: «почему bank-web стал compromised?»
+- Поддерживает lineage-запросы: «почему bank-web стал compromised?».
 
 ### EventRouter
 
@@ -231,19 +185,13 @@ CyberCity. Он загружает статический топологичес
 | Режим | Кто отвечает на события | Когда используется |
 |-------|-------------------------|--------------------|
 | **simulated** | Эмулятор движка | Лёгкие сервисы, массовые decoys. |
-| **real** | Внешний агент на VM/pod | High-value target для hands-on. |
+| **real** | Out-of-band наблюдатель (`cybercity-collector`) | High-value target для hands-on. |
 | **decoy** | Эмулятор с fake fingerprint | Honeypots, threat intelligence. |
 
-Движок обнаруживает real-сервисы через **heartbeat-события**, отправляемые
-небольшим агентом на каждой real VM.
-
-## Слои развёртывания
-
-| Слой | Назначение | Примеры инструментов |
-|------|------------|----------------------|
-| **Management** | Админский доступ, CI/CD, мониторинг | Proxmox host, Terraform, Ansible |
-| **Control** | Движок, БД, messaging, GitOps | K8s, Redpanda, PostgreSQL, ArgoCD |
-| **City / Data** | Real VMs, simulated pods, player workstations | VMs, Multus, Cilium, VyOS |
+Движок обнаруживает real-сервисы через **heartbeat-события**, наблюдаемые
+out-of-band через `cybercity-collector` (см.
+[`adr/0003-hybrid-execution.md`](adr/0003-hybrid-execution.md) и
+[`cybercity/adr/0003-collector-rust-out-of-band.md`](https://github.com/TheCipherKeeper/cybercity/blob/main/adr/0003-collector-rust-out-of-band.md)).
 
 ## Observability
 
@@ -259,7 +207,8 @@ CyberCity. Он загружает статический топологичес
 - Сетевая сегментация явно задана в топологическом графе.
 - Публичные сервисы достижимы только через declared exposure.
 - OT-сегменты изолированы.
-- Агенты real-сервисов аутентифицируются к event bus.
+- Наблюдение за real-сервисами — out-of-band через `cybercity-collector`
+  (подписанные события); in-guest телеметрия — best-effort, не для scoring.
 - Публичный UI read-only; действия игрока требуют аутентифицированной сессии.
 - Секреты живут в Vault или cloud KMS, никогда в репозиториях.
 
@@ -280,7 +229,7 @@ CyberCity. Он загружает статический топологичес
 - Новый тип события → добавить handler.
 - Новое propagation-правило → добавить в `EventRouter`.
 - Новый background-процесс → зарегистрировать в tick-цикле.
-- Новый сценарий → scenario manager инжектирует события.
+- Новый сценарий → scenario runner инжектирует события.
 - Новая организация → добавить YAML в `cybercity-data`, перезагрузить артефакт.
 
 ## Дорожная карта к первой публичной демонстрации
@@ -288,16 +237,18 @@ CyberCity. Он загружает статический топологичес
 1. **Core engine** ✅ — topology, event graph, router, state, API.
 2. **Persistence** — PostgreSQL-снапшоты и audit.
 3. **Messaging** — интеграция с Redpanda.
-4. **Scenario manager** — первый скриптованный сценарий.
+4. **Scenario runner** — первый скриптованный сценарий (авторинг в `cybercity-data`).
 5. **UI** — интерактивный граф, event log, панель команд.
-6. **Home lab deployment** — Proxmox + K8s.
+6. **Home lab deployment** — Proxmox + K8s (через `cybercity-manage`).
 7. **Public read-only demo** — Cloudflare tunnel.
 
 ## Связанные документы
 
-- [`VISION.md`](VISION.md) — цель проекта и принципы.
-- [`docs/adr/0001-two-graph-architecture.md`](adr/0001-two-graph-architecture.md) — ADR о двух графах.
+- [`cybercity/ARCHITECTURE.md`](https://github.com/TheCipherKeeper/cybercity/blob/main/ARCHITECTURE.md) — системная архитектура (контекст, ответственности, слои).
+- [`cybercity/VISION.md`](https://github.com/TheCipherKeeper/cybercity/blob/main/VISION.md) — философия и принципы проекта.
+- [`adr/0001-two-graph-architecture.md`](adr/0001-two-graph-architecture.md) — ADR о двух графах.
 - [`DATA_FLOW.md`](DATA_FLOW.md) — детальный поток событий.
 - [`MODELS.md`](MODELS.md) — справочник моделей.
+- [`MATH_MODEL.md`](MATH_MODEL.md) — математическая основа движка.
 - [`API.md`](API.md) — протокол HTTP/WebSocket.
 - [`DEPLOYMENT.md`](DEPLOYMENT.md) — руководство по развёртыванию.
