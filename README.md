@@ -10,6 +10,9 @@
 `cybercity-data`, ведёт runtime-состояние города и обрабатывает поток событий
 через graph-aware router. См. ADR-0006 для обоснования выбора языка.
 
+> Канон композиции (6 репозиториев, контракты, доверительная граница) —
+> [`cybercity/COMPOSITION.md`](https://github.com/TheCipherKeeper/cybercity/blob/main/COMPOSITION.md).
+
 ## Архитектура
 
 Движок построен вокруг **двух графов**:

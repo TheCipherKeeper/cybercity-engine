@@ -124,12 +124,14 @@ Runtime-состояние — это проекция потока событи
 
 | Репозиторий | Роль |
 |-------------|------|
-| `cybercity` | Landing page и публичная витрина. |
-| `cybercity-data` | Каноническая декларативная модель города, валидатор, билдер. |
-| `cybercity-engine` | **Этот репозиторий** — event-driven runtime. |
+| `cybercity` | Витрина и публичный landing; канон композиции — `COMPOSITION.md`. |
+| `cybercity-data` | Каноническая декларативная модель города, валидатор, билдер, автор сценариев. |
+| `cybercity-engine` | **Этот репозиторий** — event-driven runtime, два графа, scoring. |
+| `cybercity-manage` | Контрольная плоскость: provisioning, reset/rollback, изоляция, квоты; размещает коллектор. |
+| `cybercity-collector` | Внешний out-of-band per-host коллектор; телеметрия в engine по Kafka. |
 | `cybercity-ui` | Web-фронтенд для визуализации и взаимодействия. |
-| `cybercity-agents` | LLM-ассистенты генерации контента (будущее). |
-| `cybercity-blueprints` | Переиспользуемые шаблоны org/сервисов (будущее). |
+
+> Единый источник правды — [`cybercity/COMPOSITION.md`](https://github.com/TheCipherKeeper/cybercity/blob/main/COMPOSITION.md).
 
 ## Лицензия
 

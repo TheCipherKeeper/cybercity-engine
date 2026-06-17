@@ -59,8 +59,12 @@ Apache Kafka без изменения кода приложения.
 
 ## Client library
 
-Использовать `aiokafka` для async producer/consumer. Она совместима с
-Redpanda и останется совместимой при миграции на Kafka.
+Использовать Go Kafka-клиент — `github.com/twmb/franz-go` (либо
+`github.com/segmentio/kafka-go`). Оба Kafka-совместимы и работают с Redpanda,
+что сохраняет совместимость при будущей миграции на Apache Kafka.
+
+> Обновлено согласно [ADR-0006](0006-go-first.md): исходная рекомендация
+> `aiokafka` (Python) снята после перехода на Go-first.
 
 ## Consequences
 
